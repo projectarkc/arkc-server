@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import socket
 import re
 
@@ -30,7 +32,7 @@ class SingleClientHandler:
 
     def http_request_handler(self, request):
         """Parse host and port from HTTP Header and send the request to `forward_request`."""
-        r_str = str(request)
+        r_str = request.decode("UTF-8")
         headers = dict(
             re.findall(r"(?P<name>.*?): (?P<value>.*?)\n", r_str))
         # TODO: potential bug with Windows/*nix line ending issue
