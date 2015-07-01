@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 import socket
-import re
 
 
 class SingleClientHandler:
@@ -31,13 +30,22 @@ class SingleClientHandler:
         # return response
 
     def http_request_handler(self, request):
-        """Parse host and port from HTTP Header and send the request to `forward_request`."""
+        """Translate HTTP proxy request to standart HTTP request,
+        parse host and port from HTTP Header and send the request to `forward_request`."""
         r_str = request.decode("UTF-8")
-        headers = dict(
-            re.findall(r"(?P<name>.*?): (?P<value>.*?)\n", r_str))
+
+        # split request line and headers
+        request_line, headers = r_str.split("\n", 1)
         # TODO: potential bug with Windows/*nix line ending issue
-        # TODO: more efficient way to parse the headers?
-        host_port = headers["Host"]
+
+        # translate proxy request to stadard HTTP request
+        # TODO: ugly hack. re solution for this?
+        host_port, path = request_line.split("/", 3)[-2:]
+        request_line = r_str.split(" ", 1)[0] + " /" + path
+        headers = headers.replace("Proxy-connection", "Connection")
+        request = bytes(request_line + "\n" + headers, "UTF-8")
+
+        # Parse host and port
         try:
             host, port_str = host_port.split(":")
             port = int(port_str)
@@ -46,11 +54,13 @@ class SingleClientHandler:
             port = 80
         self.forward_request(host, port, request)
         # return self.forward_request(host, port, request)
+        # return (host, port, request)
 
 
 if __name__ == "__main__":
     h = SingleClientHandler("127.0.0.1", 80)
-    print(h.http_request_handler(b'GET / HTTP/1.1\nHost: www.baidu.com\n\n\n'))
+    print(h.http_request_handler(
+        b'GET http://www.example.com/ HTTP/1.1\nHost: www.example.com\nProxy-Connection: keep-alive\n\n'))
 
 
 # TODO: interface for communicating with the client
