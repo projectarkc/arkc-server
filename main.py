@@ -6,9 +6,10 @@ import socket
 class SingleClientHandler:
 
     def __init__(self, client_host, client_port):
-        self.client_socket = socket.socket()
-        self.client_socket.connect((client_host, client_port))
+        self.client_host = client_host
+        self.client_port = client_port
         self.bufsize = 4096
+        self.listen = True
 
     @staticmethod
     def connect_target(target_host, target_port):
@@ -56,14 +57,29 @@ class SingleClientHandler:
         # return self.forward_request(host, port, request)
         # return (host, port, request)
 
+    def client_listener(self):
+        """Emulate the 'listen' behavior. Receive requests from the client constantly."""
+        while self.listen:
+            self.client_socket = socket.socket()
+            self.client_socket.connect((self.client_host, self.client_port))
+            request = b""
+            request_segment = self.client_socket.recv(self.bufsize)
+            while len(request_segment) > 0:
+                request += request_segment
+                request_segment = self.client_socket.recv(self.bufsize)
+            self.http_request_handler(request)
+            self.client_socket.close()
+        # TODO: async operation?
+        # TODO: Is it possible to reuse existing connections?
+
+    def terminate(self):
+        self.listen = False
 
 if __name__ == "__main__":
     h = SingleClientHandler("127.0.0.1", 80)
     print(h.http_request_handler(
         b'GET http://www.example.com/ HTTP/1.1\nHost: www.example.com\nProxy-Connection: keep-alive\n\n'))
 
-
-# TODO: interface for communicating with the client
 
 # TODO: seems slow. Is there any performance bottleneck?
 
