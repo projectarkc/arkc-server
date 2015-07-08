@@ -75,12 +75,6 @@ class SingleClientHandler:
     def terminate(self):
         self.listen = False
 
-if __name__ == "__main__":
-    h = SingleClientHandler("127.0.0.1", 80)
-    print(h.http_request_handler(
-        b'GET http://www.example.com/ HTTP/1.1\nHost: www.example.com\nProxy-Connection: keep-alive\n\n'))
-
-
 # TODO: seems slow. Is there any performance bottleneck?
 
 # TODO: support multiple clients
