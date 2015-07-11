@@ -18,6 +18,9 @@ class ClientConnector(Protocol):
         point = TCP4ClientEndpoint(reactor, host, port)
         connectProtocol(point, TargetConnector(request, self))
 
+    def connectionLost(self, reason):
+        logging.info("client connection lost with " + str(reason))
+
 
 class TargetConnector(Protocol):
 
@@ -34,10 +37,15 @@ class TargetConnector(Protocol):
                      len(response) + str(self.transport.getPeer()))
         self.initiator.transport.write(response)
 
+    def connectionLost(self, reason):
+        # TODO: automatic retry on failure
+        logging.info("target connection lost with " + str(reason))
+        self.initiator.transport.loseConnection()
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     point = TCP4ClientEndpoint(reactor, "127.0.0.1", 8000)
     connectProtocol(point, ClientConnector())
     reactor.run()
-    
+
 # TODO: support other protocols
