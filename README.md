@@ -1,29 +1,26 @@
 #ArkC-server
------------------
 
 ArkC is a lightweight proxy based on Python 3 and Twisted. It is designed to be proof to IP blocking m
 easures.
 
 ArkC-Server is the server-side utility.
 
-#Setup and Requirement
------------------
+##Setup and Requirement
 
 Running ArkC-Client requires Python 3 and Twisted.
 
 For Debian or Ubuntu users:
-sudo apt-get install python3 python3-dev python3-pip
-sudo pip3 install -r requirements.txt
 
-#Usage
------------------
+    sudo apt-get install python3 python3-dev python3-pip
+    sudo pip3 install -r requirements.txt
+
+##Usage
 
 Run
 
 	python3 main.py
 
-#License
------------------
+##License
 
 Copyright 2015 ArkC contributers
 
