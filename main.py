@@ -5,13 +5,19 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.internet.protocol import DatagramProtocol
-from utils import http_proxy_request_parser
+from twisted.web.http import HTTPFactory
+from proxy import ConnectProxy
+
+PROXY_PORT = 9050
 
 
 class ClientConnector(Protocol):
 
     def __init__(self, initiator):
         self.initiator = initiator
+        self.proxy_connector = ProxyConnector(self)
+        point = TCP4ClientEndpoint(reactor, "127.0.0.1", PROXY_PORT)
+        connectProtocol(point, self.proxy_connector)
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
@@ -19,25 +25,20 @@ class ClientConnector(Protocol):
         if self.initiator.pending_request > 0:
             self.initiator.connectClient()
 
-    def dataReceived(self, raw_request):
-        host, port, request = http_proxy_request_parser(
-            raw_request.decode("UTF-8"))
-        point = TCP4ClientEndpoint(reactor, host, port)
-        connectProtocol(point, TargetConnector(request, self))
+    def dataReceived(self, data):
+        self.proxy_connector.transport.write(data)
 
     def connectionLost(self, reason):
         logging.info("client connection lost with " + str(reason))
 
 
-class TargetConnector(Protocol):
+class ProxyConnector(Protocol):
 
-    def __init__(self, request, initiator):
-        self.request = request
+    def __init__(self, initiator):
         self.initiator = initiator
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
-        self.transport.write(bytes(self.request, "UTF-8"))
 
     def dataReceived(self, response):
         logging.info("received %d bytes from " %
@@ -71,8 +72,15 @@ class Coodinator(DatagramProtocol):
         point = TCP4ClientEndpoint(reactor, self.host, self.client_port)
         connectProtocol(point, ClientConnector(self))
 
+
+def start_proxy():
+    factory = HTTPFactory()
+    factory.protocol = ConnectProxy
+    reactor.listenTCP(PROXY_PORT, factory, interface="127.0.0.1")
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    start_proxy()
     reactor.listenUDP(9000, Coodinator("127.0.0.1", 8002, 8000))
     reactor.run()
 
