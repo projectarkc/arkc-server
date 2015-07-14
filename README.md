@@ -7,12 +7,14 @@ ArkC-Server is the server-side utility.
 
 ##Setup and Requirement
 
-Running ArkC-Client requires Python 3 and Twisted.
+Running ArkC-Client requires Python 3 and Twisted. A virtual environment is generally recommended.
 
 For Debian or Ubuntu users:
 
-    sudo apt-get install python3 python3-dev python3-pip
-    sudo pip3 install -r requirements.txt
+    sudo apt-get install python3 python3-dev python3-pip virtualenv
+    virtualenv -p python3 ~/virtualenvs/arkc-server
+    . ~/virtualenvs/arkc-server/bin/activate
+    pip install -r requirements.txt
 
 ##Usage
 
