@@ -46,7 +46,6 @@ class ProxyConnector(Protocol):
         self.initiator.transport.write(response)
 
     def connectionLost(self, reason):
-        # TODO: automatic retry on failure
         logging.info("target connection lost with " + str(reason))
         self.initiator.transport.loseConnection()
 
