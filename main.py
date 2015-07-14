@@ -49,6 +49,7 @@ class TargetConnector(Protocol):
         logging.info("target connection lost with " + str(reason))
         self.initiator.transport.loseConnection()
 
+
 class Coodinator(DatagramProtocol):
 
     def __init__(self, host, ctl_port, client_port):
@@ -59,7 +60,8 @@ class Coodinator(DatagramProtocol):
 
     def startProtocol(self):
         self.transport.connect(self.host, self.ctl_port)
-        logging.info("coodinator connected to %s:%d" % (self.host, self.ctl_port))
+        logging.info("coodinator connected to %s:%d" %
+                     (self.host, self.ctl_port))
 
     def datagramReceived(self, data, addr):
         self.pending_request += len(data)
