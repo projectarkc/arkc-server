@@ -18,6 +18,10 @@ For Debian or Ubuntu users:
     chmod +x install.sh
     ./install.sh
 
+##Acknowledgements
+
+The http proxy part is based on [twisted-connect-proxy](https://github.com/fmoo/twisted-connect-proxy) by Peter Ruibal, released under BSD License.
+
 ##Usage
 
 Run

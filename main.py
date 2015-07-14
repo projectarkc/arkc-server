@@ -6,7 +6,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from twisted.internet.protocol import DatagramProtocol
 from twisted.web.http import HTTPFactory
-from proxy import ConnectProxy
+from proxy.server import ConnectProxy
 
 PROXY_PORT = 9050
 
