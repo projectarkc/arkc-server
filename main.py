@@ -3,6 +3,7 @@
 import logging
 import argparse
 from Crypto.PublicKey import RSA
+from hashlib import sha1
 from twisted.internet import reactor
 from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
@@ -37,9 +38,12 @@ if __name__ == "__main__":
                         dest="local_cert_path")
     args = parser.parse_args()
 
+    certs = dict()
     try:
         with open(args.remote_cert_path, "r") as f:
+            remote_cert_txt = f.read()
             remote_cert = RSA.importKey(f.read())
+            certs[sha1(remote_cert_txt)] = remote_cert
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
@@ -60,11 +64,7 @@ if __name__ == "__main__":
     start_proxy(args.proxy_port)
     reactor.listenUDP(
         args.udp_port,
-        Coordinator(
-            args.remote_host,
-            args.remote_control_port,
-            args.remote_port,
-            args.proxy_port
-        )
+        Coordinator(args.proxy_port, local_cert, certs)
     )
+
     reactor.run()
