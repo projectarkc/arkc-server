@@ -2,6 +2,7 @@
 
 import logging
 import argparse
+from Crypto.PublicKey import RSA
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
@@ -77,6 +78,7 @@ def start_proxy(port):
     factory.protocol = ConnectProxy
     reactor.listenTCP(port, factory, interface="127.0.0.1")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start ArkC server.")
     parser.add_argument("-v", action="store_true", help="show detailed logs")
@@ -91,7 +93,32 @@ if __name__ == "__main__":
                         help="host of client (REQUIRED)")
     parser.add_argument("-rp", "--remote-port", default=8000, type=int,
                         help="port of client's listener, 8000 by default")
+    parser.add_argument("-rc", "--remote-cert", type=str, required=True,
+                        help="certificate containing public key of the client (REQUIRED)",
+                        dest="remote_cert_path")
+    parser.add_argument("-lc", "--local-cert", type=str, required=True,
+                        help="certificate containing private key of local (REQUIRED)",
+                        dest="local_cert_path")
     args = parser.parse_args()
+
+    try:
+        with open(args.remote_cert_path, "r") as f:
+            remote_cert = RSA.importKey(f.read())
+    except Exception as err:
+        print ("Fatal error while loading client certificate.")
+        print (err)
+        quit()
+
+    try:
+        with open(args.local_cert_path, "r") as f:
+            local_cert = RSA.importKey(f.read())
+        if not local_cert.has_private():
+            print("Fatal error, no private key included in local certificate.")
+    except IOError as err:
+        print ("Fatal error while loading local certificate.")
+        print (err)
+        quit()
+
     if args.v:
         logging.basicConfig(level=logging.INFO)
     start_proxy(args.proxy_port)
