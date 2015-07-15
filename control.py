@@ -28,9 +28,9 @@ class Coordinator(DatagramProtocol):
         # TODO: check validity
         # TODO: client_sha1 is currently not used
         self.pending_request += 1
-        self.connectClient(salt, string)
+        self.connect_client(salt, string)
 
-    def connectClient(self, salt, string):
+    def connect_client(self, salt, string):
         point = TCP4ClientEndpoint(reactor, self.host, self.client_port)
         # TODO: string should be unique to each Coordinator instance
         connectProtocol(

@@ -25,7 +25,7 @@ class ClientConnector(Protocol):
             generate_auth_msg(self.salt, self.string, self.pri, self.client_pub))
         self.initiator.pending_request -= 1
         if self.initiator.pending_request > 0:
-            self.initiator.connectClient()
+            self.initiator.connect_client()
 
     def dataReceived(self, data):
         # TODO: decrypt data
