@@ -81,21 +81,21 @@ def start_proxy():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start ArkC server.")
     parser.add_argument("-v", action="store_true", help="show detailed logs")
-    parser.add_argument("-up", "--udp-port", default=9000, type=int, 
-        help="port for the udp request listener, 9000 by default")
-    parser.add_argument("-pp", "--proxy-port", default=9050, type=int, 
-        help="port for the local http proxy server, 9050 by default")
-    parser.add_argument("-rc", "--remote-control-port", default=8002, type=int, 
-        help="port of control on the client side, i.e. the udp request listener, \
-        i.e. the port udp listener communicates with, 8002 by default")
+    parser.add_argument("-up", "--udp-port", default=9000, type=int,
+                        help="port for the udp request listener, 9000 by default")
+    parser.add_argument("-pp", "--proxy-port", default=9050, type=int,
+                        help="port for the local http proxy server, 9050 by default")
+    parser.add_argument("-rc", "--remote-control-port", default=8002, type=int,
+                        help="port of control on the client side, i.e. the udp request listener, \
+                            i.e. the port udp listener communicates with, 8002 by default")
     parser.add_argument("-rh", "--remote-host", type=str, required=True,
-        help="host of client (REQUIRED)")
-    parser.add_argument("-rp", "--remote-port", default=8000, type=int, 
-        help="port of client's listener, 8000 by default")
+                        help="host of client (REQUIRED)")
+    parser.add_argument("-rp", "--remote-port", default=8000, type=int,
+                        help="port of client's listener, 8000 by default")
     args = parser.parse_args()
     if args.v:
         logging.basicConfig(level=logging.INFO)
     start_proxy()
     reactor.listenUDP(args.udp_port,
-        Coodinator(args.remote_host, args.remote_control_port, args.remote_port))
+                      Coodinator(args.remote_host, args.remote_control_port, args.remote_port))
     reactor.run()
