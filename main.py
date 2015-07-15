@@ -34,6 +34,7 @@ class ClientConnector(Protocol):
             self.initiator.connectClient()
 
     def dataReceived(self, data):
+        # TODO: decrypt data
         self.proxy_connector.transport.write(data)
 
     def connectionLost(self, reason):
@@ -44,6 +45,8 @@ class ProxyConnector(Protocol):
 
     def __init__(self, initiator):
         self.initiator = initiator
+        self.buffer = ''
+        self.segment_size = 4096
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
@@ -51,10 +54,22 @@ class ProxyConnector(Protocol):
     def dataReceived(self, response):
         logging.info("received %d bytes from " %
                      len(response) + str(self.transport.getPeer()))
-        self.initiator.transport.write(response)
+        while len(self.buffer) > self.segment_size:
+            self.write()
+
+    def write(self):
+        if len(self.buffer) <= self.segment_size:
+            write_buffer = self.buffer
+        else:
+            write_buffer = self.buffer[:self.segment_size]
+            self.buffer = self.buffer[self.segment_size:]
+        # TODO: encrypt write_buffer
+        self.initiator.transport.write(write_buffer)
 
     def connectionLost(self, reason):
         logging.info("target connection lost with " + str(reason))
+        while self.buffer:
+            self.write()
         self.initiator.transport.loseConnection()
 
 
@@ -92,7 +107,8 @@ class Coodinator(DatagramProtocol):
                 string,
                 self.pri,
                 self.client_pub,
-                self.proxy_port)
+                self.proxy_port
+            )
         )
 
 
@@ -151,6 +167,7 @@ if __name__ == "__main__":
             args.remote_host,
             args.remote_control_port,
             args.remote_port,
-            args.proxy_port)
+            args.proxy_port
+        )
     )
     reactor.run()
