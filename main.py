@@ -9,15 +9,13 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.web.http import HTTPFactory
 from proxy.server import ConnectProxy
 
-PROXY_PORT = 9050
-
 
 class ClientConnector(Protocol):
 
-    def __init__(self, initiator):
+    def __init__(self, initiator, proxy_port):
         self.initiator = initiator
         self.proxy_connector = ProxyConnector(self)
-        point = TCP4ClientEndpoint(reactor, "127.0.0.1", PROXY_PORT)
+        point = TCP4ClientEndpoint(reactor, "127.0.0.1", proxy_port)
         connectProtocol(point, self.proxy_connector)
 
     def connectionMade(self):
@@ -53,10 +51,11 @@ class ProxyConnector(Protocol):
 
 class Coodinator(DatagramProtocol):
 
-    def __init__(self, host, ctl_port, client_port):
+    def __init__(self, host, ctl_port, client_port, proxy_port):
         self.host = host
         self.ctl_port = ctl_port
         self.client_port = client_port
+        self.proxy_port = proxy_port
         self.pending_request = 0
 
     def startProtocol(self):
@@ -70,13 +69,13 @@ class Coodinator(DatagramProtocol):
 
     def connectClient(self):
         point = TCP4ClientEndpoint(reactor, self.host, self.client_port)
-        connectProtocol(point, ClientConnector(self))
+        connectProtocol(point, ClientConnector(self, self.proxy_port))
 
 
-def start_proxy():
+def start_proxy(port):
     factory = HTTPFactory()
     factory.protocol = ConnectProxy
-    reactor.listenTCP(PROXY_PORT, factory, interface="127.0.0.1")
+    reactor.listenTCP(port, factory, interface="127.0.0.1")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start ArkC server.")
@@ -95,7 +94,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.v:
         logging.basicConfig(level=logging.INFO)
-    start_proxy()
+    start_proxy(args.proxy_port)
     reactor.listenUDP(args.udp_port,
-                      Coodinator(args.remote_host, args.remote_control_port, args.remote_port))
+                      Coodinator(args.remote_host, args.remote_control_port, args.remote_port,
+                                 args.proxy_port))
     reactor.run()
