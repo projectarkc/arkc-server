@@ -42,7 +42,7 @@ if __name__ == "__main__":
     try:
         with open(args.remote_cert_path, "r") as f:
             remote_cert_txt = f.read()
-            remote_cert = RSA.importKey(f.read())
+            remote_cert = RSA.importKey(remote_cert_txt)
             certs[sha1(remote_cert_txt)] = remote_cert
     except Exception as err:
         print ("Fatal error while loading client certificate.")
