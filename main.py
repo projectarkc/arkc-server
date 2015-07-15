@@ -6,7 +6,7 @@ from Crypto.PublicKey import RSA
 from twisted.internet import reactor
 from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
-from control import Coodinator
+from control import Coordinator
 
 
 def start_proxy(port):
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     start_proxy(args.proxy_port)
     reactor.listenUDP(
         args.udp_port,
-        Coodinator(
+        Coordinator(
             args.remote_host,
             args.remote_control_port,
             args.remote_port,

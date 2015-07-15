@@ -6,7 +6,7 @@ from client import ClientConnector
 from auth import decrypt_udp_msg
 
 
-class Coodinator(DatagramProtocol):
+class Coordinator(DatagramProtocol):
 
     def __init__(self, host, ctl_port, client_port, proxy_port, pri, client_pub):
         self.host = host
@@ -20,7 +20,7 @@ class Coodinator(DatagramProtocol):
 
     def startProtocol(self):
         self.transport.connect(self.host, self.ctl_port)
-        logging.info("coodinator connected to %s:%d" %
+        logging.info("coordinator connected to %s:%d" %
                      (self.host, self.ctl_port))
 
     def datagramReceived(self, data, addr):
@@ -32,7 +32,7 @@ class Coodinator(DatagramProtocol):
 
     def connectClient(self, salt, string):
         point = TCP4ClientEndpoint(reactor, self.host, self.client_port)
-        # TODO: string should be unique to each Coodinator instance
+        # TODO: string should be unique to each Coordinator instance
         connectProtocol(
             point,
             ClientConnector(
