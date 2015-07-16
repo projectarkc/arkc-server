@@ -38,8 +38,7 @@ class Coordinator(DatagramProtocol):
 
     def datagramReceived(self, data, addr):
         logging.info("received udp request from " + str(addr))
-        host = addr.host
-        port = addr.port
+        (host, port) = addr
         try:
             main_pw, client_sha1 = self.decrypt_udp_msg(data)
             if not self.creators.has_key[client_sha1]:
