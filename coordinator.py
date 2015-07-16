@@ -2,8 +2,10 @@ import logging
 from twisted.internet.protocol import DatagramProtocol
 from client import ClientConnectorCreator
 
+
 class ClientAddrChanged(Exception):
     pass
+
 
 class Coordinator(DatagramProtocol):
 
@@ -26,15 +28,16 @@ class Coordinator(DatagramProtocol):
         The encrypted message should be
             salt +
             sha1(local_pub) +
-            client_pri(salt) +
+            client_sign(salt) +
             server_pub(main_pw)
-        Total length is 16 + 40 + 256 + 256 = 568 bytes
+        Total length is 16 + 40 + 512 + 256 = 824 bytes
         """
-        assert len(msg) == 568
-        salt, client_sha1, salt_enc, main_pw_enc = \
-            msg[:16], msg[16: 56], msg[56: 312], msg[312:]
+        assert len(msg) == 824
+        salt, client_sha1, salt_sign_hex, main_pw_enc = \
+            msg[:16], msg[16: 56], msg[56: 568], msg[568:]
+        salt_sign = (int(salt_sign_hex, 16),)
         client_pub = self.certs[client_sha1]
-        assert salt == client_pub.decrypt(salt_enc)
+        assert client_pub.verify(salt, salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
         return main_pw, client_sha1
 
@@ -60,4 +63,5 @@ class Coordinator(DatagramProtocol):
         except ClientAddrChanged:
             logging.error("client address changed")
         except Exception as err:
+            raise err
             logging.error("unknown error: " + str(err))
