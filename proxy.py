@@ -24,7 +24,7 @@ class ProxyConnector(Protocol):
         else:
             write_buffer = self.buffer[:self.segment_size]
             self.buffer = self.buffer[self.segment_size:]
-        self.initiator.transport.write(self.cipher.encrypt(write_buffer))
+        self.initiator.transport.write(self.initiator.cipher.encrypt(write_buffer))
 
     def connectionLost(self, reason):
         logging.info("target connection lost with " + str(reason))
