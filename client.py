@@ -1,4 +1,7 @@
 import logging
+from random import choice
+from string import letters as L
+from string import digits as D
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
@@ -8,14 +11,15 @@ from Crypto.Cipher import AES
 
 class ClientConnector(Protocol):
 
-    def __init__(self, initiator, salt):
+    def __init__(self, initiator):
         self.initiator = initiator
-        self.salt = salt
-        self.string = self.initiator.string
-        self.cipher = self.initiator.cipher
+        self.pw_gen = lambda l: ''.join([choice(L + D) for i in range(l)])
+        self.main_pw = self.initiator.main_pw
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
-        self.buffer =""
+        self.session_pw = self.pw_gen(16)
+        self.cipher = AES.new(self.session_pw, AES.MODE_CFB, self.main_pw)
+        self.buffer = ""
         self.segment_size = 4096
         self.proxy_port = self.initiator.initiator.proxy_port
         self.proxy_connector = ProxyConnector(self)
@@ -26,10 +30,9 @@ class ClientConnector(Protocol):
         """Generate encrypted message.
 
         The message is in the form
-            server_pri(salt + local_pub(string))
+            server_pri(session_pw + main_pw)
         """
-        encrypted_string = self.client_pub.encrypt(self.string, "r")
-        return self.pri.encrypt(self.salt + encrypted_string, "r")
+        return self.pri.encrypt(self.session_pw + self.main_pw, "r")
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
@@ -54,15 +57,15 @@ class ClientConnector(Protocol):
 
 class ClientConnectorCreator:
 
-    def __init__(self, initiator, client_pub, host, port, string):
+    def __init__(self, initiator, client_pub, host, port, main_pw):
         self.initiator = initiator
         self.client_pub = client_pub
         self.host = host
         self.port = port
-        self.string = string
+        self.main_pw = main_pw
         self.cipher = AES.new(self.string, AES.MODE_CFB, self.string)
 
-    def connect(self, salt):
-        connector = ClientConnector(self, salt)
+    def connect(self):
+        connector = ClientConnector(self)
         point = TCP4ClientEndpoint(reactor, self.host, self.port)
         connectProtocol(point, connector)

@@ -1,9 +1,10 @@
 import logging
 from twisted.internet.protocol import DatagramProtocol
-from client import ClientConnector
+from client import ClientConnectorCreator
 
 
 class Coordinator(DatagramProtocol):
+
     """Dispatch UDP requests to ClientConnectorCreators.
 
     The local http proxy port, the server's private key,
@@ -18,43 +19,42 @@ class Coordinator(DatagramProtocol):
         self.creators = dict()
 
     def decrypt_udp_msg(self, msg):
-        """Return (salt, string, client_sha1).
+        """Return (main_pw, client_sha1).
 
         The encrypted message should be
-            server_pub(
-                salt +
-                sha1(local_pub) +
-                local_pri(salt + string)
-            )
+            salt +
+            sha1(local_pub) +
+            client_pri(salt) +
+            server_pub(main_pw)
+        Total length is 16 + 40 + 256 + 256 = 568 bytes
         """
-        decrypted_msg = self.pri.decrypt(msg)
-        salt = decrypted_msg[:16]
-        client_sha1 = decrypted_msg[16: 36]
+        assert len(msg) == 568
+        salt, client_sha1, salt_enc, main_pw_enc = \
+            msg[:16], msg[16: 56], msg[56: 312], msg[312:]
         client_pub = self.certs[client_sha1]
-        salt_string = client_pub.decrypt(decrypted_msg[36:])
-        salt1, string = salt_string[:16], salt_string[16:]
-        assert salt == salt1
-        assert len(string) == 16
-        return salt, string, client_sha1
+        assert salt == client_pub.decrypt(salt_enc)
+        main_pw = self.pri.decrypt(main_pw_enc)
+        return main_pw, client_sha1
 
     def datagramReceived(self, data, addr):
-        logging.info("received udp request from "+str(addr))
+        logging.info("received udp request from " + str(addr))
         host = addr.host
         port = addr.port
         try:
-            salt, string, client_sha1 = self.decrypt_udp_msg(data)
+            main_pw, client_sha1 = self.decrypt_udp_msg(data)
             if not self.creators.has_key[client_sha1]:
                 client_pub = self.certs[client_sha1]
-                creator = ClientConnector(self, client_pub, host, port, string)
+                creator = ClientConnectorCreator(
+                    self, client_pub, host, port, main_pw)
             else:
                 creator = self.creators[client_sha1]
-                assert string == creator.string
+                assert main_pw == creator.main_pw
                 if host != creator.host or port != creator.port:
                     logging.warning("client address changed")
-            creator.connect(salt)
+            creator.connect()
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
-            logging.error("authentication information does not match")
+            logging.error("authentication failed")
         except Exception as err:
             logging.error("unknown error: " + err)
