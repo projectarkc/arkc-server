@@ -30,9 +30,9 @@ class ClientConnector(Protocol):
         """Generate encrypted message.
 
         The message is in the form
-            server_pri(session_pw + main_pw)
+            server_pri(main_pw) + client_pub(session_pw)
         """
-        return self.pri.encrypt(self.session_pw + self.main_pw, "r")
+        return self.pri.encrypt(self.main_pw, "r") + self.client_pub.encrypt(self.pw_gen)
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
