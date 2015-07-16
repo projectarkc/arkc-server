@@ -56,4 +56,4 @@ class Coordinator(DatagramProtocol):
         except AssertionError:
             logging.error("authentication failed")
         except Exception as err:
-            logging.error("unknown error: " + err)
+            logging.error("unknown error: " + str(err))
