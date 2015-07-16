@@ -1,5 +1,6 @@
 import logging
 from twisted.internet.protocol import Protocol
+from Crypto.Cipher import AES
 
 
 class ProxyConnector(Protocol):
@@ -24,8 +25,7 @@ class ProxyConnector(Protocol):
         else:
             write_buffer = self.buffer[:self.segment_size]
             self.buffer = self.buffer[self.segment_size:]
-        # TODO: encrypt write_buffer
-        self.initiator.transport.write(write_buffer)
+        self.initiator.transport.write(self.cipher.encrypt(write_buffer))
 
     def connectionLost(self, reason):
         logging.info("target connection lost with " + str(reason))
