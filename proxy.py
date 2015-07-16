@@ -1,6 +1,5 @@
 import logging
 from twisted.internet.protocol import Protocol
-from Crypto.Cipher import AES
 
 
 class ProxyConnector(Protocol):
