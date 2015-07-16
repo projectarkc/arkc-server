@@ -2,6 +2,8 @@ import logging
 from twisted.internet.protocol import DatagramProtocol
 from client import ClientConnectorCreator
 
+class ClientAddrChanged(Exception):
+    pass
 
 class Coordinator(DatagramProtocol):
 
@@ -49,11 +51,13 @@ class Coordinator(DatagramProtocol):
                 creator = self.creators[client_sha1]
                 assert main_pw == creator.main_pw
                 if host != creator.host or port != creator.port:
-                    logging.warning("client address changed")
+                    raise ClientAddrChanged
             creator.connect()
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
             logging.error("authentication failed")
+        except ClientAddrChanged:
+            logging.error("client address changed")
         except Exception as err:
             logging.error("unknown error: " + str(err))
