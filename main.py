@@ -7,7 +7,7 @@ from hashlib import sha1
 from twisted.internet import reactor
 from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
-from control import Coordinator
+from coordinator import Coordinator
 
 
 def start_proxy(port):
