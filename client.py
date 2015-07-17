@@ -30,9 +30,13 @@ class ClientConnector(Protocol):
         """Generate encrypted message.
 
         The message is in the form
-            server_pri(session_pw + main_pw)
+            server_sign(main_pw) (HEX) +
+            client_pub(session_pw)
+        Total length is 512 + 256 = 768 bytes
         """
-        return self.pri.encrypt(self.session_pw + self.main_pw, "r")
+        hex_sign = '%X' % self.pri.sign(self.main_pw)[0]
+        pw_enc = self.client_pub.encrypt(self.session_pw, None)
+        return hex_sign + pw_enc
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
