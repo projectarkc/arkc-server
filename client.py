@@ -34,8 +34,8 @@ class ClientConnector(Protocol):
             client_pub(session_pw)
         Total length is 512 + 256 = 768 bytes
         """
-        hex_sign = '%X' % self.pri.sign(self.main_pw)[0]
-        pw_enc = self.client_pub.encrypt(self.session_pw, None)
+        hex_sign = '%X' % self.pri.sign(self.main_pw, None)[0]
+        pw_enc = self.client_pub.encrypt(self.session_pw, None)[0]
         return hex_sign + pw_enc
 
     def connectionMade(self):
