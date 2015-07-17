@@ -15,12 +15,14 @@ class Coordinator(DatagramProtocol):
     and a dictionary of trusted clients' public keys must be given.
     """
 
-    def __init__(self, proxy_port, pri, certs):
+    def __init__(self, proxy_port, pri, certs, client_port):
         self.proxy_port = proxy_port
         self.pri = pri
         # dicts matching sha-1 to clients' public keys and creators
         self.certs = certs
         self.creators = dict()
+        self.client_port = client_port
+        # TODO: deprecate this parameter?
 
     def decrypt_udp_msg(self, msg):
         """Return (main_pw, client_sha1).
@@ -43,7 +45,8 @@ class Coordinator(DatagramProtocol):
 
     def datagramReceived(self, data, addr):
         logging.info("received udp request from " + str(addr))
-        (host, port) = addr
+        host = addr[0]
+        port = self.client_port
         try:
             main_pw, client_sha1 = self.decrypt_udp_msg(data)
             if not self.creators.has_key(client_sha1):
