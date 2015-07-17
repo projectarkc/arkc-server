@@ -46,7 +46,7 @@ class Coordinator(DatagramProtocol):
         (host, port) = addr
         try:
             main_pw, client_sha1 = self.decrypt_udp_msg(data)
-            if not self.creators.has_key[client_sha1]:
+            if not self.creators.has_key(client_sha1):
                 client_pub = self.certs[client_sha1]
                 creator = ClientConnectorCreator(
                     self, client_pub, host, port, main_pw)
