@@ -63,7 +63,6 @@ class ClientConnectorCreator:
         self.host = host
         self.port = port
         self.main_pw = main_pw
-        self.cipher = AES.new(self.string, AES.MODE_CFB, self.string)
 
     def connect(self):
         connector = ClientConnector(self)
