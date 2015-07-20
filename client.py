@@ -44,19 +44,24 @@ class ClientConnector(Protocol):
 
     def dataReceived(self, data):
         self.buffer += data
-        while len(self.buffer) > self.segment_size:
+        # TODO: segmenting
+        # while len(self.buffer) > self.segment_size:
+        while self.buffer:
             self.write()
 
     def write(self):
         if len(self.buffer) < self.segment_size:
             write_buffer = self.cipher.decrypt(self.buffer)
+            self.buffer = ''
         else:
             write_buffer = self.cipher.decrypt(self.buffer[:self.segment_size])
             self.buffer = self.buffer[self.segment_size:]
-        self.transport.write(write_buffer)
+        self.proxy_connector.transport.write(write_buffer)
 
     def connectionLost(self, reason):
         logging.info("client connection lost with " + str(reason))
+        while self.buffer:
+            self.write()
 
 
 class ClientConnectorCreator:

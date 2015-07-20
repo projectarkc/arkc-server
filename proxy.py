@@ -15,12 +15,16 @@ class ProxyConnector(Protocol):
     def dataReceived(self, response):
         logging.info("received %d bytes from " %
                      len(response) + str(self.transport.getPeer()))
-        while len(self.buffer) > self.segment_size:
+        self.buffer += response
+        # TODO: segmenting
+        # while len(self.buffer) > self.segment_size:
+        while self.buffer:
             self.write()
 
     def write(self):
         if len(self.buffer) <= self.segment_size:
             write_buffer = self.buffer
+            self.buffer = ''
         else:
             write_buffer = self.buffer[:self.segment_size]
             self.buffer = self.buffer[self.segment_size:]
