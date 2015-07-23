@@ -2,6 +2,7 @@ import logging
 from random import choice
 from string import letters as L
 from string import digits as D
+from collections import deque
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
@@ -13,6 +14,7 @@ class ClientConnector(Protocol):
 
     def __init__(self, initiator):
         self.initiator = initiator
+        self.split_char = chr(30) * 5
         self.pw_gen = lambda l: ''.join([choice(L + D) for i in range(l)])
         self.main_pw = self.initiator.main_pw
         self.pri = self.initiator.initiator.pri
@@ -20,7 +22,7 @@ class ClientConnector(Protocol):
         self.session_pw = self.pw_gen(16)
         self.cipher = AES.new(self.session_pw, AES.MODE_CFB, self.main_pw)
         self.buffer = ""
-        self.segment_size = 4096
+        self.write_queue = deque()
         self.proxy_port = self.initiator.initiator.proxy_port
         self.proxy_connector = ProxyConnector(self)
         point = TCP4ClientEndpoint(reactor, "127.0.0.1", self.proxy_port)
@@ -44,23 +46,19 @@ class ClientConnector(Protocol):
 
     def dataReceived(self, data):
         self.buffer += data
-        # TODO: segmenting
-        # while len(self.buffer) > self.segment_size:
-        while self.buffer:
+        recv = self.buffer.split(self.split_char)
+        self.write_queue.extend(recv[:-1])
+        self.buffer = recv[-1]  # incomplete message
+        while self.write_queue:
             self.write()
 
     def write(self):
-        if len(self.buffer) < self.segment_size:
-            write_buffer = self.cipher.decrypt(self.buffer)
-            self.buffer = ''
-        else:
-            write_buffer = self.cipher.decrypt(self.buffer[:self.segment_size])
-            self.buffer = self.buffer[self.segment_size:]
+        write_buffer = self.cipher.decrypt(self.write_queue.popleft())
         self.proxy_connector.transport.write(write_buffer)
 
     def connectionLost(self, reason):
         logging.info("client connection lost with " + str(reason))
-        while self.buffer:
+        while self.write_queue:
             self.write()
 
 
