@@ -21,13 +21,14 @@ if __name__ == "__main__":
     parser.add_argument("-v", action="store_true", help="show detailed logs")
     parser.add_argument("-up", "--udp-port", default=9000, type=int,
                         help="port for the udp request listener, 9000 by default")
-    parser.add_argument("-pp", "--proxy-port", default=9050, type=int,
-                        help="port for the local http proxy server, 9050 by default")
-    parser.add_argument("-rcp", "--remote-control-port", default=8002, type=int,
-                        help="port of control on the client side, i.e. the udp request listener, \
-                            i.e. the port udp listener communicates with, 8002 by default") #TODO: Such auth methods should be obsolete
-    parser.add_argument("-rh", "--remote-host", type=str, required=True,
-                        help="host of client (REQUIRED)") #TODO: Such auth methods should be obsolete
+    parser.add_argument('-ep', "--use-external-proxy", action="store_true",
+                        help="use an external HTTPS proxy server running locally,\
+                        e.g. polipo, for better performance.\
+                        Will fall back to in-built python proxy server otherwise.")
+    parser.add_argument("-pp", "--proxy-port", default=8100, type=int,
+                        help="port for the local http proxy server, 8100 by default")
+    parser.add_argument("-tp", "--tor-port", default=None, type=int,
+                        help="port of Tor (usually 9050), leave it blank to run without Tor")
     parser.add_argument("-rp", "--remote-port", default=8000, type=int,
                         help="port of client's listener, 8000 by default")
     parser.add_argument("-rc", "--remote-cert", type=str, required=True,
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         with open(args.remote_cert_path, "r") as f:
             remote_cert_txt = f.read()
             remote_cert = RSA.importKey(remote_cert_txt)
-            certs[sha1(remote_cert_txt)] = remote_cert
+            certs[sha1(remote_cert_txt).hexdigest()] = remote_cert
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
@@ -61,10 +62,19 @@ if __name__ == "__main__":
 
     if args.v:
         logging.basicConfig(level=logging.INFO)
-    start_proxy(args.proxy_port)
+
+    if not args.use_external_proxy:
+        start_proxy(args.proxy_port)
+
     reactor.listenUDP(
         args.udp_port,
-        Coordinator(args.proxy_port, local_cert, certs)
+        Coordinator(
+            args.proxy_port,
+            args.tor_port,
+            local_cert,
+            certs,
+            args.remote_port
+            )
     )
 
     reactor.run()
