@@ -21,8 +21,8 @@ if __name__ == "__main__":
     parser.add_argument("-v", action="store_true", help="show detailed logs")
     parser.add_argument("-up", "--udp-port", default=9000, type=int,
                         help="port for the udp request listener, 9000 by default")
-    parser.add_argument("-pp", "--proxy-port", default=9050, type=int,
-                        help="port for the local http proxy server, 9050 by default")
+    parser.add_argument("-pp", "--proxy-port", default=8100, type=int,
+                        help="port for the local http proxy server, 8100 by default")
     parser.add_argument("-rp", "--remote-port", default=8000, type=int,
                         help="port of client's listener, 8000 by default")
     parser.add_argument("-rc", "--remote-cert", type=str, required=True,
