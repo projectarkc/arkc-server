@@ -21,6 +21,10 @@ if __name__ == "__main__":
     parser.add_argument("-v", action="store_true", help="show detailed logs")
     parser.add_argument("-up", "--udp-port", default=9000, type=int,
                         help="port for the udp request listener, 9000 by default")
+    parser.add_argument('-ep', "--use-external-proxy", action="store_true",
+                        help="use an external HTTPS proxy server running locally,\
+                        e.g. polipo, for better performance.\
+                        Will fall back to in-built python proxy server otherwise.")
     parser.add_argument("-pp", "--proxy-port", default=8100, type=int,
                         help="port for the local http proxy server, 8100 by default")
     parser.add_argument("-tp", "--tor-port", default=None, type=int,
@@ -58,7 +62,10 @@ if __name__ == "__main__":
 
     if args.v:
         logging.basicConfig(level=logging.INFO)
-    start_proxy(args.proxy_port)
+
+    if not args.use_external_proxy:
+        start_proxy(args.proxy_port)
+
     reactor.listenUDP(
         args.udp_port,
         Coordinator(
