@@ -10,7 +10,7 @@ Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is currently not s
 
 For Debian or Ubuntu users:
 
-    sudo apt-get install virtualenv python-dev
+    sudo apt-get install python-virtualenv python-dev
     virtualenv ~/virtualenvs/arkc-server
     . ~/virtualenvs/arkc-server/bin/activate
     pip install -r requirements.txt
