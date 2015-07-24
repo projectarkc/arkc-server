@@ -23,6 +23,8 @@ if __name__ == "__main__":
                         help="port for the udp request listener, 9000 by default")
     parser.add_argument("-pp", "--proxy-port", default=8100, type=int,
                         help="port for the local http proxy server, 8100 by default")
+    parser.add_argument("-tp", "--tor-port", default=None, type=int,
+                        help="port of Tor (usually 9050), leave it blank to run without Tor")
     parser.add_argument("-rp", "--remote-port", default=8000, type=int,
                         help="port of client's listener, 8000 by default")
     parser.add_argument("-rc", "--remote-cert", type=str, required=True,
@@ -59,7 +61,13 @@ if __name__ == "__main__":
     start_proxy(args.proxy_port)
     reactor.listenUDP(
         args.udp_port,
-        Coordinator(args.proxy_port, local_cert, certs, args.remote_port)
+        Coordinator(
+            args.proxy_port,
+            args.tor_port,
+            local_cert,
+            certs,
+            args.remote_port
+            )
     )
 
     reactor.run()

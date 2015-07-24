@@ -15,8 +15,9 @@ class Coordinator(DatagramProtocol):
     and a dictionary of trusted clients' public keys must be given.
     """
 
-    def __init__(self, proxy_port, pri, certs, client_port):
+    def __init__(self, proxy_port, tor_port, pri, certs, client_port):
         self.proxy_port = proxy_port
+        self.tor_port = tor_port
         self.pri = pri
         # dicts matching sha-1 to clients' public keys and creators
         self.certs = certs
