@@ -37,26 +37,28 @@ class Coordinator(DatagramProtocol):
 
         The encrypted message should be
             salt +
+            required_connection_number (HEX, 2 bytes)
             sha1(local_pub) +
             client_sign(salt) +
             server_pub(main_pw)
-        Total length is 16 + 40 + 512 + 256 = 824 bytes
+        Total length is 16 + 2 + 40 + 512 + 256 = 826 bytes
         """
-        assert len(msg) == 824
-        salt, client_sha1, salt_sign_hex, main_pw_enc = \
-            msg[:16], msg[16: 56], msg[56: 568], msg[568:]
+        assert len(msg) == 826
+        salt, number_hex, client_sha1, salt_sign_hex, main_pw_enc = \
+            msg[:16], msg[16:18], msg[18: 58], msg[58: 570], msg[570:]
         salt_sign = (int(salt_sign_hex, 16),)
+        number = (int(number_hex, 16),)
         client_pub = self.certs[client_sha1]
         assert client_pub.verify(salt, salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
-        return main_pw, client_sha1
+        return main_pw, client_sha1, number
 
     def datagramReceived(self, data, addr):
         logging.info("received udp request from " + str(addr))
         host = addr[0]
         port = self.client_port
         try:
-            main_pw, client_sha1 = self.decrypt_udp_msg(data)
+            main_pw, client_sha1, number= self.decrypt_udp_msg(data)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
                 creator = ClientConnectorCreator(
@@ -66,7 +68,7 @@ class Coordinator(DatagramProtocol):
                 assert main_pw == creator.main_pw
                 if host != creator.host or port != creator.port:
                     raise ClientAddrChanged
-            if creator.number <= 30:
+            while creator.number <= number:
                 creator.connect()
         except KeyError:
             logging.error("untrusted client")

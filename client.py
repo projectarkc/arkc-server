@@ -44,6 +44,7 @@ class ClientConnector(Protocol):
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
+        self.number += 1
 
     def dataReceived(self, data):
         self.buffer += data
@@ -76,7 +77,6 @@ class ClientConnectorCreator:
         self.number = 0
 
     def connect(self):
-        self.number += 1
         connector = ClientConnector(self)
         if self.tor_point:
             point = SOCKS4ClientEndpoint(self.host, self.port, self.tor_point)
