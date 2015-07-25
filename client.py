@@ -59,6 +59,7 @@ class ClientConnector(Protocol):
 
     def connectionLost(self, reason):
         logging.info("client connection lost with " + str(reason))
+        self.initiator.number -= 1
         while self.write_queue:
             self.write()
 
@@ -72,8 +73,10 @@ class ClientConnectorCreator:
         self.host = host
         self.port = port
         self.main_pw = main_pw
+        self.number = 0
 
     def connect(self):
+        self.number += 1
         connector = ClientConnector(self)
         if self.tor_port:
             tor_point = TCP4ClientEndpoint(reactor, "127.0.0.1", self.tor_port)
