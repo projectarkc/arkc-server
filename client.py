@@ -68,7 +68,7 @@ class ClientConnectorCreator:
 
     def __init__(self, initiator, client_pub, host, port, main_pw):
         self.initiator = initiator
-        self.tor_port = self.initiator.tor_port
+        self.tor_point = self.initiator.tor_point
         self.client_pub = client_pub
         self.host = host
         self.port = port
@@ -78,9 +78,8 @@ class ClientConnectorCreator:
     def connect(self):
         self.number += 1
         connector = ClientConnector(self)
-        if self.tor_port:
-            tor_point = TCP4ClientEndpoint(reactor, "127.0.0.1", self.tor_port)
-            point = SOCKS4ClientEndpoint(self.host, self.port, tor_point)
+        if self.tor_point:
+            point = SOCKS4ClientEndpoint(self.host, self.port, self.tor_point)
         else:
             point = TCP4ClientEndpoint(reactor, self.host, self.port)
         connectProtocol(point, connector)

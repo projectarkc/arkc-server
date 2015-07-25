@@ -1,5 +1,7 @@
 import logging
+from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from client import ClientConnectorCreator
 
 
@@ -24,6 +26,11 @@ class Coordinator(DatagramProtocol):
         self.creators = dict()
         self.client_port = client_port
         # TODO: deprecate this parameter?
+
+        if self.tor_port:
+            host = "127.0.0.1"
+            port = self.tor_port
+            self.tor_point = TCP4ClientEndpoint(reactor, host, port)
 
     def decrypt_udp_msg(self, msg):
         """Return (main_pw, client_sha1).
