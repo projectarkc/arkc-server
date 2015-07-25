@@ -44,7 +44,7 @@ class ClientConnector(Protocol):
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
-        self.number += 1
+        self.initiator.number += 1
 
     def dataReceived(self, data):
         self.buffer += data
@@ -69,7 +69,7 @@ class ClientConnectorCreator:
 
     def __init__(self, initiator, client_pub, host, port, main_pw):
         self.initiator = initiator
-        self.tor_point = self.initiator.tor_point
+        self.tor_point = self.initiator.tor_port
         self.client_pub = client_pub
         self.host = host
         self.port = port

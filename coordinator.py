@@ -68,7 +68,7 @@ class Coordinator(DatagramProtocol):
                 assert main_pw == creator.main_pw
                 if host != creator.host or port != creator.port:
                     raise ClientAddrChanged
-            while creator.number <= number:
+            if creator.number <= number:
                 creator.connect()
         except KeyError:
             logging.error("untrusted client")
