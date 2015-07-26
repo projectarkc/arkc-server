@@ -74,6 +74,7 @@ class Coordinator(DatagramProtocol):
             i = 0
             while i< (number - creator.number) / 2:
                 creator.connect()
+                i += 1
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
