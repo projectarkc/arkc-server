@@ -33,7 +33,7 @@ class Coordinator(DatagramProtocol):
             self.tor_point = TCP4ClientEndpoint(reactor, host, port)
 
     def decrypt_udp_msg(self, msg):
-        """Return (main_pw, client_sha1).
+        """Return (main_pw, client_sha1, number).
 
         The encrypted message should be
             salt +
