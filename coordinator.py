@@ -31,6 +31,8 @@ class Coordinator(DatagramProtocol):
             host = "127.0.0.1"
             port = self.tor_port
             self.tor_point = TCP4ClientEndpoint(reactor, host, port)
+        else:
+            self.tor_point = None
 
     def decrypt_udp_msg(self, msg):
         """Return (main_pw, client_sha1, number).
