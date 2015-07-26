@@ -31,9 +31,11 @@ class Coordinator(DatagramProtocol):
             host = "127.0.0.1"
             port = self.tor_port
             self.tor_point = TCP4ClientEndpoint(reactor, host, port)
+        else:
+            self.tor_point = None
 
     def decrypt_udp_msg(self, msg):
-        """Return (main_pw, client_sha1).
+        """Return (main_pw, client_sha1, number).
 
         The encrypted message should be
             salt +
@@ -45,9 +47,9 @@ class Coordinator(DatagramProtocol):
         """
         assert len(msg) == 826
         salt, number_hex, client_sha1, salt_sign_hex, main_pw_enc = \
-            msg[:16], msg[16:18], msg[18: 58], msg[58: 570], msg[570:]
+            msg[:16], msg[16:18], msg[18:58], msg[58:570], msg[570:]
         salt_sign = (int(salt_sign_hex, 16),)
-        number = (int(number_hex, 16),)
+        number = int(number_hex, 16)
         client_pub = self.certs[client_sha1]
         assert client_pub.verify(salt, salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
@@ -58,11 +60,12 @@ class Coordinator(DatagramProtocol):
         host = addr[0]
         port = self.client_port
         try:
-            main_pw, client_sha1, number= self.decrypt_udp_msg(data)
+            main_pw, client_sha1, number = self.decrypt_udp_msg(data)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
                 creator = ClientConnectorCreator(
                     self, client_pub, host, port, main_pw)
+                self.creators[client_sha1] = creator
             else:
                 creator = self.creators[client_sha1]
                 assert main_pw == creator.main_pw
