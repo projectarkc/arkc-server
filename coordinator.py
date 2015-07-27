@@ -68,7 +68,9 @@ class Coordinator(DatagramProtocol):
                 self.creators[client_sha1] = creator
             else:
                 creator = self.creators[client_sha1]
-                assert main_pw == creator.main_pw
+                if main_pw != creator.main_pw:
+                    creator.main_pw = main_pw
+                    logging.warning("main password changed")
                 if host != creator.host or port != creator.port:
                     raise ClientAddrChanged
             if creator.number <= number:
