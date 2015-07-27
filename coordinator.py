@@ -73,8 +73,10 @@ class Coordinator(DatagramProtocol):
                     logging.warning("main password changed")
                 if host != creator.host or port != creator.port:
                     raise ClientAddrChanged
-            if creator.number <= number:
+            i = 0
+            while i< (number - creator.number) / 2:
                 creator.connect()
+                i += 1
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
