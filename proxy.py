@@ -5,12 +5,13 @@ from twisted.internet.protocol import Protocol
 
 class ProxyConnector(Protocol):
 
-    def __init__(self, initiator):
+    def __init__(self, initiator, conn_id):
         self.initiator = initiator
+        self.conn_id = conn_id
         self.split_char = chr(30) * 5
         self.buffer = ''
         self.write_queue = deque()
-        self.segment_size = 4096
+        self.segment_size = 4094    # 4096(total)-2(id)
 
     def connectionMade(self):
         logging.info("connected to " + str(self.transport.getPeer()))
@@ -30,10 +31,10 @@ class ProxyConnector(Protocol):
 
     def write(self):
         write_buffer = self.write_queue.popleft()
-        self.initiator.write_client(write_buffer)
+        self.initiator.write_client(write_buffer, self.conn_id)
 
     def connectionLost(self, reason):
         logging.info("target connection lost with " + str(reason))
         while self.write_queue:
             self.write()
-        self.initiator.transport.loseConnection()
+        self.initiator.finish(self.conn_id)
