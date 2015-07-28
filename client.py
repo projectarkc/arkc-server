@@ -58,6 +58,10 @@ class ClientConnector(Protocol):
         write_buffer = self.cipher.decrypt(self.write_queue.popleft())
         self.proxy_connector.transport.write(write_buffer)
 
+    def write_client(self, data):
+        to_write = self.cipher.encrypt(data) + self.split_char
+        self.transport.write(to_write)
+
     def connectionLost(self, reason):
         logging.info("client connection lost with " + str(reason))
         self.initiator.number -= 1
