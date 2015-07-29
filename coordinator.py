@@ -3,11 +3,12 @@ from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from client import ClientConnectorCreator
+from time import sleep
 
+RETRY = 20
 
 class ClientAddrChanged(Exception):
     pass
-
 
 class Coordinator(DatagramProtocol):
 
@@ -74,8 +75,9 @@ class Coordinator(DatagramProtocol):
                 if host != creator.host or port != creator.port:
                     raise ClientAddrChanged
             i = 0
-            while i< (number - creator.number) / 2:
+            while number > creator.number and i< RETRY:
                 creator.connect()
+                sleep(0.05)
                 i += 1
         except KeyError:
             logging.error("untrusted client")
