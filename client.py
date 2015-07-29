@@ -43,6 +43,7 @@ class ClientConnector(Protocol):
         return hex_sign + pw_enc
 
     def new_proxy_conn(self, conn_id):
+        logging.info("adding connection id " + conn_id)
         try:
             assert conn_id not in self.buffers
             self.buffers[conn_id] = ""
@@ -53,6 +54,7 @@ class ClientConnector(Protocol):
             logging.error("duplicate id")
 
     def del_proxy_conn(self, conn_id):
+        logging.info("deleting connection id " + conn_id)
         try:
             assert self.buffers.pop(conn_id, None)
             assert self.write_queues.pop(conn_id, None)
@@ -82,7 +84,8 @@ class ClientConnector(Protocol):
     def write(self, conn_id):
         buffer_enc = self.write_queues[conn_id].popleft()
         write_buffer = self.cipher.decrypt(buffer_enc)
-        self.proxy_connectors[conn_id].transport.write(write_buffer)
+        connectors = self.proxy_connectors
+        connectors[conn_id].transport.write(write_buffer)
 
     def finish(self, conn_id):
         self.write_client(self.close_char, conn_id)
