@@ -84,8 +84,7 @@ class ClientConnector(Protocol):
     def write(self, conn_id):
         buffer_enc = self.write_queues[conn_id].popleft()
         write_buffer = self.cipher.decrypt(buffer_enc)
-        connectors = self.proxy_connectors
-        connectors[conn_id].transport.write(write_buffer)
+        self.proxy_connectors[conn_id].transport.write(write_buffer)
 
     def finish(self, conn_id):
         self.write_client(self.close_char, conn_id)
