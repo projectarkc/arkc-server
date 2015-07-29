@@ -73,7 +73,7 @@ class ClientConnector(Protocol):
             if conn_id not in self.buffers:
                 self.new_proxy_conn(conn_id)
             self.buffers[conn_id] += data
-            recv = self.buffer.split(self.split_char)
+            recv = self.buffers[conn_id].split(self.split_char)
             self.write_queues[conn_id].extend(recv[:-1])
             self.buffers[conn_id] = recv[-1]  # incomplete message
             while self.write_queues[conn_id]:
