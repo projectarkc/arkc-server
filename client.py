@@ -92,7 +92,8 @@ class ClientConnector(Protocol):
         while self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
             logging.info("sending %d bytes to proxy " % len(data) +
-                         addr_to_str(self.proxy_connectors[conn_id].getPeer()))
+                         addr_to_str(self.proxy_connectors[conn_id]
+                         .transport.getPeer()))
             self.proxy_connectors[conn_id].transport.write(data)
 
     def finish(self, conn_id):
