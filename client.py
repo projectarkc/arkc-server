@@ -1,4 +1,5 @@
 import logging
+from utils import addr_to_str
 from random import choice
 from string import letters as L
 from string import digits as D
@@ -6,6 +7,7 @@ from collections import deque
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
+from twisted.internet.error import ConnectionDone, ConnectionLost
 from txsocksx.client import SOCKS5ClientEndpoint
 from proxy import ProxyConnector
 from Crypto.Cipher import AES
@@ -63,11 +65,14 @@ class ClientConnector(Protocol):
             logging.warning("deleting non-existing key")
 
     def connectionMade(self):
-        logging.info("connected to " + str(self.transport.getPeer()))
+        logging.info("connected to client " +
+                     addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
         self.initiator.number += 1
 
     def dataReceived(self, recv_data):
+        logging.info("received %d bytes from client " % len(recv_data) +
+                     addr_to_str(self.transport.getPeer()))
         self.buffer += recv_data
         recv = self.buffer.split(self.split_char)
         for text_enc in recv[:-1]:
@@ -86,6 +91,8 @@ class ClientConnector(Protocol):
         """Flush the queue of conn_id."""
         while self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
+            logging.info("sending %d bytes to proxy " % len(data) +
+                         addr_to_str(self.proxy_connectors[conn_id].getPeer()))
             self.proxy_connectors[conn_id].transport.write(data)
 
     def finish(self, conn_id):
@@ -99,10 +106,17 @@ class ClientConnector(Protocol):
 
     def write_client(self, data, conn_id):
         to_write = self.cipher.encrypt(conn_id + data) + self.split_char
+        logging.info("sending %d bytes to client " % len(data) +
+                     addr_to_str(self.transport.getPeer()))
         self.transport.write(to_write)
 
     def connectionLost(self, reason):
-        logging.info("client connection lost with " + str(reason))
+        if reason == ConnectionDone:
+            logging.info("client connection done: " +
+                         addr_to_str(self.transport.getPeer()))
+        elif reason == ConnectionLost:
+            logging.warning("client connection lost: " +
+                            addr_to_str(self.transport.getPeer()))
         self.initiator.number -= 1
         self.clean()
 

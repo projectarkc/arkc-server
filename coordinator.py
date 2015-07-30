@@ -3,12 +3,13 @@ from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from client import ClientConnectorCreator
-from time import sleep
 
 RETRY = 20
 
+
 class ClientAddrChanged(Exception):
     pass
+
 
 class Coordinator(DatagramProtocol):
 
@@ -57,25 +58,26 @@ class Coordinator(DatagramProtocol):
         return main_pw, client_sha1, number
 
     def datagramReceived(self, data, addr):
-        logging.info("received udp request from " + str(addr))
-        host = addr[0]
-        port = self.client_port
+        host, udp_port = addr
+        logging.info("received udp request from " +
+                     host + ":%d" % udp_port)
+        tcp_port = self.client_port
         try:
             main_pw, client_sha1, number = self.decrypt_udp_msg(data)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
                 creator = ClientConnectorCreator(
-                    self, client_pub, host, port, main_pw)
+                    self, client_pub, host, tcp_port, main_pw)
                 self.creators[client_sha1] = creator
             else:
                 creator = self.creators[client_sha1]
                 if main_pw != creator.main_pw:
                     creator.main_pw = main_pw
                     logging.warning("main password changed")
-                if host != creator.host or port != creator.port:
+                if host != creator.host or tcp_port != creator.port:
                     raise ClientAddrChanged
-            #i = 0
-            if number > creator.number: #and i< RETRY:
+            # i = 0
+            if number > creator.number:   # and i< RETRY:
                 creator.connect()
             #    sleep(0.05)
             #    i += 1
