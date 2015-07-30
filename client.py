@@ -75,6 +75,7 @@ class ClientConnector(Protocol):
                      addr_to_str(self.transport.getPeer()))
         self.buffer += recv_data
         recv = self.buffer.split(self.split_char)
+        touched_ids = set()
         for text_enc in recv[:-1]:
             text_dec = self.cipher.decrypt(text_enc)
             conn_id, data = text_dec[:2], text_dec[2:]
@@ -84,8 +85,12 @@ class ClientConnector(Protocol):
                 if conn_id not in self.write_queues:
                     deferred = self.new_proxy_conn(conn_id)
                     deferred.addCallback(lambda ignored: self.write(conn_id))
+                else:
+                    touched_ids.add(conn_id)
                 self.write_queues[conn_id].append(data)
         self.buffer = recv[-1]  # incomplete message
+        for conn_id in touched_ids:
+            self.write(conn_id)
 
     def write(self, conn_id):
         """Flush the queue of conn_id."""
