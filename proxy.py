@@ -14,7 +14,7 @@ class ProxyConnector(Protocol):
         self.segment_size = 4094    # 4096(total)-2(id)
 
     def connectionMade(self):
-        logging.info("connected to " + str(self.transport.getPeer()))
+        logging.info("connected to proxy " + str(self.transport.getPeer()))
 
     def dataReceived(self, response):
         logging.info("received %d bytes from " %
