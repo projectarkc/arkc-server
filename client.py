@@ -43,12 +43,14 @@ class ClientConnector(Protocol):
         return hex_sign + pw_enc
 
     def new_proxy_conn(self, conn_id):
+        """Return a Deferred object of the proxy connector."""
         logging.info("adding connection id " + conn_id)
         try:
             assert conn_id not in self.write_queues
             self.write_queues[conn_id] = deque()
             self.proxy_connectors[conn_id] = ProxyConnector(self, conn_id)
-            connectProtocol(self.proxy_point, self.proxy_connectors[conn_id])
+            point, connector = self.proxy_point, self.proxy_connectors[conn_id]
+            return connectProtocol(point, connector)
         except AssertionError:
             logging.error("duplicate id")
 
@@ -68,19 +70,16 @@ class ClientConnector(Protocol):
     def dataReceived(self, recv_data):
         self.buffer += recv_data
         recv = self.buffer.split(self.split_char)
-        touched_ids = set()
         for text_enc in recv[:-1]:
             text_dec = self.cipher.decrypt(text_enc)
             conn_id, data = text_dec[:2], text_dec[2:]
             if data == self.close_char:
                 pass    # TODO: implement this behavior
             else:
-                touched_ids.add(conn_id)
                 if conn_id not in self.write_queues:
-                    self.new_proxy_conn(conn_id)
+                    deferred = self.new_proxy_conn(conn_id)
+                    deferred.addCallback(lambda ignored: self.write(conn_id))
                 self.write_queues[conn_id].append(data)
-        for conn_id in touched_ids:
-            self.write(conn_id)
         self.buffer = recv[-1]  # incomplete message
 
     def write(self, conn_id):
