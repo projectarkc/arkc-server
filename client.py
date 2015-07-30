@@ -79,9 +79,9 @@ class ClientConnector(Protocol):
                 if conn_id not in self.write_queues:
                     self.new_proxy_conn(conn_id)
                 self.write_queues[conn_id].append(data)
-        self.main_buf = recv[-1]  # incomplete message
         for conn_id in touched_ids:
             self.write(conn_id)
+        self.buffer = recv[-1]  # incomplete message
 
     def write(self, conn_id):
         """Flush the queue of conn_id."""
