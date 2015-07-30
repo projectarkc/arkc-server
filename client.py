@@ -117,10 +117,10 @@ class ClientConnector(Protocol):
         self.transport.write(to_write)
 
     def connectionLost(self, reason):
-        if reason == ConnectionDone:
+        if type(reason) == ConnectionDone:
             logging.info("client connection done: " +
                          addr_to_str(self.transport.getPeer()))
-        elif reason == ConnectionLost:
+        elif type(reason) == ConnectionLost:
             logging.warning("client connection lost: " +
                             addr_to_str(self.transport.getPeer()))
         self.initiator.number -= 1

@@ -37,10 +37,10 @@ class ProxyConnector(Protocol):
         self.initiator.write_client(write_buffer, self.conn_id)
 
     def connectionLost(self, reason):
-        if reason == ConnectionDone:
+        if type(reason) == ConnectionDone:
             logging.info("proxy connection done: " +
                          addr_to_str(self.transport.getPeer()))
-        elif reason == ConnectionLost:
+        elif type(reason) == ConnectionLost:
             logging.warning("proxy connection lost: " +
                             addr_to_str(self.transport.getPeer()))
         while self.write_queue:
