@@ -88,5 +88,4 @@ class Coordinator(DatagramProtocol):
         except ClientAddrChanged:
             logging.error("client address changed")
         except Exception as err:
-            raise err  # remove this line after debug
             logging.error("unknown error: " + str(err))
