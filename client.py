@@ -98,9 +98,11 @@ class ClientConnector(Protocol):
         while self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
             if data:
-                logging.info("sending %d bytes to proxy " % len(data) +
-                             addr_to_str(self.proxy_connectors[conn_id]
-                             .transport.getPeer()))
+                logging.info("sending %d bytes to proxy %s from id %s" % (
+                                len(data),
+                                addr_to_str(self.proxy_connectors[conn_id]
+                                            .transport.getPeer()),
+                                conn_id))
                 self.proxy_connectors[conn_id].transport.write(data)
 
     def finish(self, conn_id):
@@ -114,8 +116,9 @@ class ClientConnector(Protocol):
 
     def write_client(self, data, conn_id):
         to_write = self.cipher.encrypt(conn_id + data) + self.split_char
-        logging.info("sending %d bytes to client " % len(data) +
-                     addr_to_str(self.transport.getPeer()))
+        logging.info("sending %d bytes to client %s with id %s" % (len(data),
+                     addr_to_str(self.transport.getPeer()),
+                     conn_id))
         self.transport.write(to_write)
 
     def connectionLost(self, reason):
