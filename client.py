@@ -7,7 +7,7 @@ from collections import deque
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
-from txsocksx.client import SOCKS5ClientEndpoint
+from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 from proxy import ProxyConnector
 from utils import AESCipher
 
@@ -135,19 +135,22 @@ class ClientConnector(Protocol):
 
 class ClientConnectorCreator:
 
-    def __init__(self, initiator, client_pub, host, port, main_pw):
+    def __init__(self, initiator, client_pub, host, port, main_pw, req_num):
         self.initiator = initiator
         self.tor_point = self.initiator.tor_point
         self.client_pub = client_pub
         self.host = host
         self.port = port
         self.main_pw = main_pw
+        self.req_num = req_num
         self.number = 0
 
     def connect(self):
-        connector = ClientConnector(self)
-        if self.tor_point:
-            point = SOCKS5ClientEndpoint(self.host, self.port, self.tor_point)
-        else:
-            point = TCP4ClientEndpoint(reactor, self.host, self.port)
-        connectProtocol(point, connector)
+        if self.number < self.req_num:
+            connector = ClientConnector(self)
+            if self.tor_point:
+                point = SOCKS5Point(self.host, self.port, self.tor_point)
+            else:
+                point = TCP4ClientEndpoint(reactor, self.host, self.port)
+            deferred = connectProtocol(point, connector)
+            deferred.addCallback(lambda ignored: self.connect())
