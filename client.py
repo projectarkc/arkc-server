@@ -9,7 +9,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint
 from proxy import ProxyConnector
-from Crypto.Cipher import AES
+from utils import AESCipher
 
 
 class ClientConnector(Protocol):
@@ -23,7 +23,7 @@ class ClientConnector(Protocol):
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = self.pw_gen(16)
-        self.cipher = AES.new(self.session_pw, AES.MODE_CFB, self.main_pw)
+        self.cipher = AESCipher(self.session_pw, self.main_pw)
         self.buffer = ""
         self.write_queues = dict()  # stores decrypted data
         self.proxy_port = self.initiator.initiator.proxy_port
