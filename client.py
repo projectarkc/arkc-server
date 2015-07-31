@@ -59,7 +59,7 @@ class ClientConnector(Protocol):
     def del_proxy_conn(self, conn_id):
         logging.info("deleting connection id " + conn_id)
         try:
-            assert self.write_queues.pop(conn_id, None)
+            assert self.write_queues.pop(conn_id, None) is not None
             assert self.proxy_connectors.pop(conn_id, None)
         except AssertionError:
             logging.warning("deleting non-existing key")
