@@ -145,6 +145,7 @@ class ClientConnectorCreator:
         self.number = 0
 
     def retry(self):
+        logging.warning("retry connection to %s:%d" % (self.host, self.port))
         self.number -= 1
         self.connect()
 
