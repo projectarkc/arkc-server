@@ -128,8 +128,7 @@ class ClientConnector(Protocol):
         logging.info("client connection lost: " +
                      addr_to_str(self.transport.getPeer()))
         self.clean()
-        self.initiator.number -= 1
-        self.initiator.connect()
+        self.initiator.retry()
 
 
 class ClientConnectorCreator:
