@@ -142,10 +142,19 @@ class ClientConnectorCreator:
         self.main_pw = main_pw
         self.req_num = req_num
         self.number = 0
+        self.max_retry = 5
+        self.retry_count = 0
 
     def retry(self):
-        logging.warning("retry connection to %s:%d" % (self.host, self.port))
-        self.number -= 1
+        if self.retry_count < self.max_retry:
+            host, port = self.host, self.port
+            logging.warning("retry connection to %s:%d" % (host, port))
+            self.number -= 1
+            self.retry_count += 1
+            self.connect()
+
+    def success(self):
+        self.retry_count = 0
         self.connect()
 
     def connect(self):
@@ -157,5 +166,5 @@ class ClientConnectorCreator:
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
             deferred = connectProtocol(point, connector)
-            deferred.addCallback(lambda ignored: self.connect())
+            deferred.addCallback(lambda ignored: self.success())
             deferred.addErrback(lambda ignored: self.retry())
