@@ -69,7 +69,6 @@ class ClientConnector(Protocol):
         logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
-        self.initiator.number += 1
 
     def dataReceived(self, recv_data):
         logging.info("received %d bytes from client " % len(recv_data) +
@@ -145,8 +144,13 @@ class ClientConnectorCreator:
         self.req_num = req_num
         self.number = 0
 
+    def retry(self):
+        self.number -= 1
+        self.connect()
+
     def connect(self):
         if self.number < self.req_num:
+            self.number += 1
             connector = ClientConnector(self)
             if self.tor_point:
                 point = SOCKS5Point(self.host, self.port, self.tor_point)
@@ -154,3 +158,4 @@ class ClientConnectorCreator:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
             deferred = connectProtocol(point, connector)
             deferred.addCallback(lambda ignored: self.connect())
+            deferred.addErrback(lambda ignored: self.retry())
