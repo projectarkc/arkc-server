@@ -28,16 +28,16 @@ class ProxyConnector(Protocol):
         if self.buffer:
             self.write_queue.append(self.buffer)
             self.buffer = ""
-        while self.write_queue:
-            self.write()
+        self.write()
 
     def write(self):
-        write_buffer = self.write_queue.popleft()
-        self.initiator.write_client(write_buffer, self.conn_id)
+        """Flush all data."""
+        while self.write_queue:
+            write_buffer = self.write_queue.popleft()
+            self.initiator.write_client(write_buffer, self.conn_id)
 
     def connectionLost(self, reason):
         logging.info("proxy connection lost: " +
                      addr_to_str(self.transport.getPeer()))
-        while self.write_queue:
-            self.write()
+        self.write()
         self.initiator.finish(self.conn_id)
