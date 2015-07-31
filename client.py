@@ -51,7 +51,9 @@ class ClientConnector(Protocol):
             self.write_queues[conn_id] = deque()
             self.proxy_connectors[conn_id] = ProxyConnector(self, conn_id)
             point, connector = self.proxy_point, self.proxy_connectors[conn_id]
-            return connectProtocol(point, connector)
+            d = connectProtocol(point, connector)
+            d.addErrback(lambda ignored: logging.error("cannot connect proxy"))
+            return d
         except AssertionError:
             logging.error("duplicate id")
 
