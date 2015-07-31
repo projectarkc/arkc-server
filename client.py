@@ -16,7 +16,7 @@ class ClientConnector(Protocol):
 
     def __init__(self, initiator):
         self.initiator = initiator
-        self.split_char = chr(30) * 5
+        self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.close_char = chr(4) * 5
         self.pw_gen = lambda l: ''.join([choice(L + D) for i in range(l)])
         self.main_pw = self.initiator.main_pw
