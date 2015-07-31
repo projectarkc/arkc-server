@@ -81,7 +81,10 @@ class ClientConnector(Protocol):
             text_dec = self.cipher.decrypt(text_enc)
             conn_id, data = text_dec[:2], text_dec[2:]
             if data == self.close_char:
-                pass    # TODO: implement this behavior
+                if conn_id in self.proxy_connectors:
+                    self.proxy_connectors[conn_id].transport.loseConnection()
+                else:
+                    logging.warning("closing non-existing connection")
             else:
                 if conn_id not in self.write_queues:
                     deferred = self.new_proxy_conn(conn_id)
@@ -111,8 +114,7 @@ class ClientConnector(Protocol):
 
     def clean(self):
         for conn_id in self.write_queues.keys():
-            while self.write_queues[conn_id]:
-                self.write(conn_id)
+            self.write(conn_id)
 
     def write_client(self, data, conn_id):
         to_write = self.cipher.encrypt(conn_id + data) + self.split_char
