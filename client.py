@@ -113,8 +113,11 @@ class ClientConnector(Protocol):
         self.del_proxy_conn(conn_id)
 
     def clean(self):
-        for conn_id in self.write_queues.keys():
-            self.write(conn_id)
+        try:
+            for conn_id in self.write_queues.keys():
+                self.write(conn_id)
+        except:
+            self.del_proxy_conn(conn_id)
 
     def write_client(self, data, conn_id):
         to_write = self.cipher.encrypt(conn_id + data) + self.split_char
