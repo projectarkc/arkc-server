@@ -7,7 +7,6 @@ from collections import deque
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
-from twisted.internet.error import ConnectionDone, ConnectionLost
 from txsocksx.client import SOCKS5ClientEndpoint
 from proxy import ProxyConnector
 from Crypto.Cipher import AES

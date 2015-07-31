@@ -1,6 +1,5 @@
 import logging
 from utils import addr_to_str
-from twisted.internet.error import ConnectionDone, ConnectionLost
 from collections import deque
 from twisted.internet.protocol import Protocol
 
