@@ -112,10 +112,9 @@ class ClientConnector(Protocol):
         self.del_proxy_conn(conn_id)
 
     def clean(self):
-        try:
-            for conn_id in self.write_queues.keys():
-                self.write(conn_id)
-        except:
+        for conn_id in self.write_queues.keys():
+            self.write(conn_id)
+            self.proxy_connectors[conn_id].transport.loseConnection()
             self.del_proxy_conn(conn_id)
 
     def write_client(self, data, conn_id):
@@ -128,8 +127,9 @@ class ClientConnector(Protocol):
     def connectionLost(self, reason):
         logging.info("client connection lost: " +
                      addr_to_str(self.transport.getPeer()))
-        self.initiator.number -= 1
         self.clean()
+        self.initiator.number -= 1
+        self.initiator.connect()
 
 
 class ClientConnectorCreator:
