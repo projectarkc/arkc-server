@@ -70,6 +70,17 @@ class ClientConnector(Protocol):
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
 
+    def proxy_lost(self, conn_id):
+        """Deal with the situation when proxy connection is lost unexpectedly.
+
+        Need to switch to a more elegant solution.
+        """
+        # TODO: switch to a more elegant solution
+        conn = self.proxy_connectors[conn_id]
+        logging.error("proxy connection %s lost unexpectedly" % conn_id)
+        conn.write()
+        self.finish(conn_id)
+
     def dataReceived(self, recv_data):
         logging.info("received %d bytes from client " % len(recv_data) +
                      addr_to_str(self.transport.getPeer()))
@@ -81,7 +92,11 @@ class ClientConnector(Protocol):
             conn_id, data = text_dec[:2], text_dec[2:]
             if data == self.close_char:
                 if conn_id in self.proxy_connectors:
-                    self.proxy_connectors[conn_id].transport.loseConnection()
+                    conn = self.proxy_connectors[conn_id]
+                    if not conn.transport:
+                        self.proxy_lost(conn_id)
+                    else:
+                        conn.transport.loseConnection()
                 else:
                     logging.warning("closing non-existing connection")
             else:
@@ -100,12 +115,15 @@ class ClientConnector(Protocol):
         while self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
             if data:
-                logging.info("sending %d bytes to proxy %s from id %s" % (
-                                len(data),
-                                addr_to_str(self.proxy_connectors[conn_id]
-                                            .transport.getPeer()),
-                                conn_id))
-                self.proxy_connectors[conn_id].transport.write(data)
+                conn = self.proxy_connectors[conn_id]
+                if not conn.transport:
+                    self.proxy_lost(conn_id)
+                else:
+                    logging.info("sending %d bytes to proxy %s from id %s" % (
+                                    len(data),
+                                    addr_to_str(conn.transport.getPeer()),
+                                    conn_id))
+                    conn.transport.write(data)
 
     def finish(self, conn_id):
         self.write_client(self.close_char, conn_id)
@@ -114,8 +132,11 @@ class ClientConnector(Protocol):
     def clean(self):
         for conn_id in self.write_queues.keys():
             self.write(conn_id)
-            self.proxy_connectors[conn_id].transport.loseConnection()
-            self.del_proxy_conn(conn_id)
+            conn = self.proxy_connectors[conn_id]
+            if not conn.transport:
+                self.proxy_lost(conn_id)
+            else:
+                conn.transport.loseConnection()
 
     def write_client(self, data, conn_id):
         to_write = self.cipher.encrypt(conn_id + data) + self.split_char
