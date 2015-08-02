@@ -173,6 +173,8 @@ class ClientConnectorCreator:
             self.number -= 1
             self.retry_count += 1
             self.connect()
+        else:
+            self.number -= 1
 
     def success(self):
         self.retry_count = 0
