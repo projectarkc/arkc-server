@@ -12,14 +12,17 @@ class AESCipher:
     def __init__(self, password, iv):
         self.password = password
         self.iv = iv
+        self.reset()
+
+    def reset(self):
         self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
 
     def encrypt(self, data):
         enc = self.cipher.encrypt(data)
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        self.reset()
         return enc
 
     def decrypt(self, data):
         dec = self.cipher.decrypt(data)
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        self.reset()
         return dec
