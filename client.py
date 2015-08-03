@@ -107,7 +107,7 @@ class ClientConnector(Protocol):
 
     def write(self, conn_id):
         """Flush the queue of conn_id."""
-        while self.write_queues[conn_id]:
+        while conn_id in self.write_queues and self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
             if data:
                 conn = self.proxy_connectors[conn_id]
