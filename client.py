@@ -167,14 +167,12 @@ class ClientConnectorCreator:
         self.retry_count = 0
 
     def retry(self):
+        self.number -= 1
         if self.retry_count < self.max_retry:
             host, port = self.host, self.port
             logging.warning("retry connection to %s:%d" % (host, port))
-            self.number -= 1
             self.retry_count += 1
             self.connect()
-        else:
-            self.number -= 1
 
     def success(self):
         self.retry_count = 0
