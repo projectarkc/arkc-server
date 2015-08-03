@@ -5,7 +5,7 @@ from string import letters as L
 from string import digits as D
 from collections import deque
 from twisted.internet import reactor
-from twisted.internet.protocol import Protocol
+from twisted.internet.protocol import Protocol, defer
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 from proxy import ProxyConnector
@@ -29,6 +29,7 @@ class ClientConnector(Protocol):
         self.proxy_port = self.initiator.initiator.proxy_port
         self.proxy_connectors = dict()
         host, port = "127.0.0.1", self.proxy_port
+        self.cutter = None
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
     def generate_auth_msg(self):
@@ -69,6 +70,10 @@ class ClientConnector(Protocol):
         logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
+        self.cutter = defer.Deferred()
+        self.cutter.addCallback(self.connectionLost("reset"))
+        cuttime = choice([35, 50, 70, 90])
+        reactor.callLater(cuttime, self.cutter.callback)
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.
