@@ -74,7 +74,11 @@ class ClientConnector(Protocol):
         """Deal with the situation when proxy connection is lost unexpectedly.
         """
         # TODO: why does this happen?
-        self.proxy_connectors[conn_id].connectionLost(reason="unexpected")
+        conn = self.proxy_connectors[conn_id]
+        conn.dead = True
+        logging.warning("proxy connection %s lost unexpectedly" % conn_id)
+        conn.write()
+        self.finish(conn_id)
 
     def dataReceived(self, recv_data):
         logging.info("received %d bytes from client " % len(recv_data) +

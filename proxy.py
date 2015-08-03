@@ -13,6 +13,7 @@ class ProxyConnector(Protocol):
         self.buffer = ''
         self.write_queue = deque()
         self.segment_size = 4094    # 4096(total)-2(id)
+        self.dead = False
 
     def connectionMade(self):
         logging.info("connected to proxy %s with id %s" %
@@ -37,10 +38,7 @@ class ProxyConnector(Protocol):
             self.initiator.write_client(write_buffer, self.conn_id)
 
     def connectionLost(self, reason):
-        if reason == "unexpected":
-            logging.warning("proxy connection %s lost unexpectedly"
-                            % self.conn_id)
-        else:
+        if not self.dead:
             logging.info("proxy connection %s lost" % self.conn_id)
-        self.write()
-        self.initiator.finish(self.conn_id)
+            self.write()
+            self.initiator.finish(self.conn_id)
