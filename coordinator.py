@@ -13,8 +13,12 @@ class Coordinator(DatagramProtocol):
 
     """Dispatch UDP requests to ClientConnectorCreators.
 
-    The local http proxy port, the server's private key,
-    and a dictionary of trusted clients' public keys must be given.
+    The local http proxy port, Tor port, the server's private key,
+    and a dict of trusted clients' public keys must be given.
+
+    Pass None as tor_port if Tor is not needed.
+
+    The dict maps SHA1 to key object.
     """
 
     def __init__(self, proxy_port, tor_port, pri, certs, client_port):
@@ -24,9 +28,11 @@ class Coordinator(DatagramProtocol):
         # dicts matching sha-1 to clients' public keys and creators
         self.certs = certs
         self.creators = dict()
-        self.client_port = client_port
-        # TODO: deprecate this parameter?
 
+        # TODO: deprecate this parameter
+        self.client_port = client_port
+
+        # Create an endpoint of Tor
         if self.tor_port:
             host = "127.0.0.1"
             port = self.tor_port
@@ -56,12 +62,20 @@ class Coordinator(DatagramProtocol):
         return main_pw, client_sha1, number
 
     def datagramReceived(self, data, addr):
+        """Event handler of receiving a UDP request.
+
+        Verify the identity of the client and assign a ClientConnectorCreator
+        to it if it is trusted.
+        """
         host, udp_port = addr
         logging.info("received udp request from " +
                      host + ":%d" % udp_port)
         tcp_port = self.client_port
+
         try:
             main_pw, client_sha1, number = self.decrypt_udp_msg(data)
+
+            # One creator corresponds to one client (with a unique SHA1)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
                 creator = ClientConnectorCreator(
@@ -74,7 +88,9 @@ class Coordinator(DatagramProtocol):
                     logging.warning("main password changed")
                 if host != creator.host or tcp_port != creator.port:
                     raise ClientAddrChanged
+
             creator.connect()
+
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
