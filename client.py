@@ -63,7 +63,7 @@ class ClientConnector(Protocol):
             assert self.write_queues.pop(conn_id, None) is not None
             assert self.proxy_connectors.pop(conn_id, None)
         except AssertionError:
-            logging.warning("deleting non-existing key")
+            logging.warning("deleting non-existing key %s" % conn_id)
 
     def connectionMade(self):
         logging.info("connected to client " +
@@ -72,14 +72,9 @@ class ClientConnector(Protocol):
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.
-
-        Need to switch to a more elegant solution.
         """
-        # TODO: switch to a more elegant solution
-        conn = self.proxy_connectors[conn_id]
-        logging.error("proxy connection %s lost unexpectedly" % conn_id)
-        conn.write()
-        self.finish(conn_id)
+        # TODO: why does this happen?
+        self.proxy_connectors[conn_id].connectionLost(reason="unexpected")
 
     def dataReceived(self, recv_data):
         logging.info("received %d bytes from client " % len(recv_data) +

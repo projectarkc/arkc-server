@@ -37,6 +37,10 @@ class ProxyConnector(Protocol):
             self.initiator.write_client(write_buffer, self.conn_id)
 
     def connectionLost(self, reason):
-        logging.info("proxy connection %s lost" % self.conn_id)
+        if reason == "unexpected":
+            logging.warning("proxy connection %s lost unexpectedly"
+                            % self.conn_id)
+        else:
+            logging.info("proxy connection %s lost" % self.conn_id)
         self.write()
         self.initiator.finish(self.conn_id)
