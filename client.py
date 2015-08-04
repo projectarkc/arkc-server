@@ -83,7 +83,7 @@ class ClientConnector(Protocol):
         """
         logging.info("client connection lost: " +
                      addr_to_str(self.transport.getPeer()))
-        self.initiator.client_lost()
+        self.initiator.client_lost(self)
 
     def write(self, data, conn_id):
         """Encrypt and write data the client.
