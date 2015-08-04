@@ -31,7 +31,7 @@ class ProxyConnector(Protocol):
     def dataReceived(self, response):
         """Event handler of receiving data from HTTP proxy.
 
-        Will cut them into segments and call self.write() to write them.
+        Will cut them into segments and call self.respond() to write them.
         """
         logging.info("received %d bytes from proxy with id %s" %
                      (len(response), self.conn_id))
@@ -42,7 +42,7 @@ class ProxyConnector(Protocol):
         if self.buffer:
             self.write_queue.append(self.buffer)
             self.buffer = ""
-        self.write()
+        self.respond()
 
     def connectionLost(self, reason):
         """Event handler of losing proxy connection.
@@ -55,12 +55,11 @@ class ProxyConnector(Protocol):
             self.write()
             self.initiator.proxy_finish(self.conn_id)
 
-    def write(self):
-        """Write all data to client.
+    def respond(self):
+        """Send all data to Control.
 
-        Pass the segments one by one to ClientConnector's client writer
-        for ID tagging and encryption.
+        Pass the segments one by one to Control's proxy_recv method.
         """
         while self.write_queue:
             write_buffer = self.write_queue.popleft()
-            self.initiator.client_write(write_buffer, self.conn_id)
+            self.initiator.proxy_recv(write_buffer, self.conn_id)

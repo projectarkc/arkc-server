@@ -2,7 +2,7 @@ import logging
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from client import ClientConnectorCreator
+from control import Control
 
 
 class ClientAddrChanged(Exception):
@@ -67,7 +67,7 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a ClientConnectorCreator
         to it if it is trusted.
         """
-        # TODO: UDP message does not necessarily come from the same host as client
+        # TODO: UDP message may not come from the same host as client
         host, udp_port = addr
         logging.info("received udp request from %s:%d" % (host, udp_port))
         try:
@@ -75,8 +75,8 @@ class Coordinator(DatagramProtocol):
             main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(data)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
-                creator = ClientConnectorCreator(
-                    self, client_pub, host, tcp_port, main_pw, number)
+                creator = Control(self, client_pub, host, tcp_port,
+                                  main_pw, number)
                 self.creators[client_sha1] = creator
             else:
                 creator = self.creators[client_sha1]
