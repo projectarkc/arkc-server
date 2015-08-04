@@ -67,9 +67,9 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a ClientConnectorCreator
         to it if it is trusted.
         """
+        # TODO: UDP message does not necessarily come from the same host as client
         host, udp_port = addr
-        logging.info("received udp request from " + 
-                     host + ":%d" % udp_port)
+        logging.info("received udp request from %s:%d" % (host, udp_port))
         try:
             # One creator corresponds to one client (with a unique SHA1)
             main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(data)
