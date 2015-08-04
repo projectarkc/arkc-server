@@ -58,7 +58,7 @@ class Coordinator(DatagramProtocol):
         client_pub = self.certs[client_sha1]
         assert client_pub.verify(salt, salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
-        remote_port = int(port_hex), 16
+        remote_port = int(port_hex, 16)
         return main_pw, client_sha1, number, remote_port
 
     def datagramReceived(self, data, addr):
