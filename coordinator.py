@@ -51,7 +51,8 @@ class Coordinator(DatagramProtocol):
         """
         assert len(msg) == 830
         salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc = \
-            msg[:16], msg[16:18], msg[18:20], msg[20:60], msg[60:572], msg[572:]
+            msg[:16], msg[16:18], msg[18:22], msg[22:62], msg[62:574], \
+            msg[574:]
         salt_sign = (int(salt_sign_hex, 16),)
         number = int(number_hex, 16)
         client_pub = self.certs[client_sha1]
