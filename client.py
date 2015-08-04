@@ -1,8 +1,7 @@
 import logging
 from utils import addr_to_str
-from random import choice, randrange
-from string import letters as L
-from string import digits as D
+from random import randrange
+from os import urandom
 from collections import deque
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
@@ -33,13 +32,10 @@ class ClientConnector(Protocol):
         self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.close_char = chr(4) * 5
 
-        # generate random string of the given length
-        self.pw_gen = lambda l: ''.join([choice(L + D) for i in range(l)])
-
         self.main_pw = self.initiator.main_pw
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
-        self.session_pw = self.pw_gen(16)
+        self.session_pw = urandom(16)
 
         self.cipher = AESCipher(self.session_pw, self.main_pw)
 
