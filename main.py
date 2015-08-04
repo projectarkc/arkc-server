@@ -87,7 +87,7 @@ if __name__ == "__main__":
         print (err)
         quit()
 
-    if args.v:
+    if args.verbose:
         logging.basicConfig(level=logging.INFO)
 
     if not args.use_external_proxy:
