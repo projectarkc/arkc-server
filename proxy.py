@@ -19,7 +19,7 @@ class ProxyConnector(Protocol):
         self.write_queue = deque()
         self.segment_size = 4094    # 4096(total)-2(id)
 
-        # set as True when self.transport becomes None, 
+        # set as True when self.transport becomes None,
         # but self.connectionLost() is not triggered
         self.dead = False
 
@@ -44,16 +44,6 @@ class ProxyConnector(Protocol):
             self.buffer = ""
         self.write()
 
-    def write(self):
-        """Write all data to client.
-
-        Pass the segments one by one to ClientConnector's client writer
-        for ID tagging and encryption.
-        """
-        while self.write_queue:
-            write_buffer = self.write_queue.popleft()
-            self.initiator.write_client(write_buffer, self.conn_id)
-
     def connectionLost(self, reason):
         """Event handler of losing proxy connection.
 
@@ -63,4 +53,14 @@ class ProxyConnector(Protocol):
         if not self.dead:
             logging.info("proxy connection %s lost" % self.conn_id)
             self.write()
-            self.initiator.finish(self.conn_id)
+            self.initiator.proxy_finish(self.conn_id)
+
+    def write(self):
+        """Write all data to client.
+
+        Pass the segments one by one to ClientConnector's client writer
+        for ID tagging and encryption.
+        """
+        while self.write_queue:
+            write_buffer = self.write_queue.popleft()
+            self.initiator.client_write(write_buffer, self.conn_id)

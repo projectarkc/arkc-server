@@ -103,19 +103,7 @@ class ClientConnector(Protocol):
 
         # Reset the connection after a random time
         expire_time = randrange(30, 90)
-        reactor.callLater(expire_time, self.reset)
-
-    def proxy_lost(self, conn_id):
-        """Deal with the situation when proxy connection is lost unexpectedly.
-
-        That is when conn.transport becomes None.
-        """
-        # TODO: why does this happen?
-        conn = self.proxy_connectors[conn_id]
-        conn.dead = True
-        logging.warning("proxy connection %s lost unexpectedly" % conn_id)
-        conn.write()
-        self.finish(conn_id)
+        reactor.callLater(expire_time, self.client_reset)
 
     def dataReceived(self, recv_data):
         """Event handler of receiving some data from client.
@@ -154,7 +142,7 @@ class ClientConnector(Protocol):
                     # create new connection to HTTP proxy
                     deferred = self.new_proxy_conn(conn_id)
                     # forward data after the connection is created
-                    deferred.addCallback(lambda ignored: self.write(conn_id))
+                    deferred.addCallback(lambda ign: self.proxy_write(conn_id))
                 else:
                     # mark the ID as touched
                     touched_ids.add(conn_id)
@@ -164,9 +152,19 @@ class ClientConnector(Protocol):
 
         # trigger forward action for the IDs with new data
         for conn_id in touched_ids:
-            self.write(conn_id)
+            self.proxy_write(conn_id)
 
-    def write(self, conn_id):
+    def connectionLost(self, reason):
+        """Event handler of losing the connection to the client.
+
+        Will retry connecting if the max retry count is not reached.
+        """
+        logging.info("client connection lost: " +
+                     addr_to_str(self.transport.getPeer()))
+        self.client_clean()
+        self.initiator.retry()
+
+    def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
         while conn_id in self.write_queues and self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
@@ -181,36 +179,27 @@ class ClientConnector(Protocol):
                                     conn_id))
                     conn.transport.write(data)
 
-    def finish(self, conn_id):
+    def proxy_lost(self, conn_id):
+        """Deal with the situation when proxy connection is lost unexpectedly.
+
+        That is when conn.transport becomes None.
+        """
+        # TODO: why does this happen?
+        conn = self.proxy_connectors[conn_id]
+        conn.dead = True
+        logging.warning("proxy connection %s lost unexpectedly" % conn_id)
+        conn.write()
+        self.proxy_finish(conn_id)
+
+    def proxy_finish(self, conn_id):
         """Write all pending response data to client and remove ID.
 
         Called when proxy connection is lost.
         """
-        self.write_client(self.close_char, conn_id)
+        self.client_write(self.close_char, conn_id)
         self.del_proxy_conn(conn_id)
 
-    def reset(self):
-        """Called after a random time to reset a existing connection to client.
-
-        May result in better performance.
-        """
-        self.loseConnection()
-        # TODO: existing IDs should be re-allocated
-
-    def clean(self):
-        """Close all connections to proxy.
-
-        Called when client connection is lost.
-        """
-        for conn_id in self.write_queues.keys():
-            self.write(conn_id)
-            conn = self.proxy_connectors[conn_id]
-            if not conn.transport:
-                self.proxy_lost(conn_id)
-            else:
-                conn.transport.loseConnection()
-
-    def write_client(self, data, conn_id):
+    def client_write(self, data, conn_id):
         """Encrypt and write data the client.
 
         Encrypted packets should be separated by split_char.
@@ -222,15 +211,26 @@ class ClientConnector(Protocol):
                      conn_id))
         self.transport.write(to_write)
 
-    def connectionLost(self, reason):
-        """Event handler of losing the connection to the client.
+    def client_reset(self):
+        """Called after a random time to reset a existing connection to client.
 
-        Will retry connecting if the max retry count is not reached.
+        May result in better performance.
         """
-        logging.info("client connection lost: " +
-                     addr_to_str(self.transport.getPeer()))
-        self.clean()
-        self.initiator.retry()
+        self.loseConnection()
+        # TODO: existing IDs should be re-allocated
+
+    def client_clean(self):
+        """Close all connections to proxy.
+
+        Called when client connection is lost.
+        """
+        for conn_id in self.write_queues.keys():
+            self.proxy_write(conn_id)
+            conn = self.proxy_connectors[conn_id]
+            if not conn.transport:
+                self.proxy_lost(conn_id)
+            else:
+                conn.transport.loseConnection()
 
 
 class ClientConnectorCreator:
