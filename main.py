@@ -17,7 +17,8 @@ def start_proxy(port):
     i.e. the client handler forwards clients' requests to the proxy,
     and the proxy is reponsible for communicating with the target server.
 
-    It is suggested that a external HTTP proxy is specified in place of the internal one,
+    It is suggested that a external HTTP proxy is specified
+    in place of the internal one,
     for performance and stability considerations.
     See command line arguments for detailed information.
     """
@@ -49,12 +50,7 @@ if __name__ == "__main__":
     # The server will connect the client behind Tor if this parameter
     # is specified
     parser.add_argument("-tp", "--tor-port", default=None, type=int,
-                        help="Tor port (default 9050), None to run without Tor")
-
-    # This parameter will be deprecated
-    # The information should be contained in UDP message.
-    parser.add_argument("-rp", "--remote-port", default=8000, type=int,
-                        help="port of client's listener, 8000 by default")
+                        help="Tor port (9050), None to run without Tor")
 
     # The public and private keys
     # The public keys of trusted clients are pre-stored in server currently
@@ -104,8 +100,7 @@ if __name__ == "__main__":
             args.proxy_port,
             args.tor_port,
             local_cert,
-            certs,
-            args.remote_port
+            certs
             )
     )
 

@@ -5,7 +5,7 @@ from string import letters as L
 from string import digits as D
 from collections import deque
 from twisted.internet import reactor
-from twisted.internet.protocol import Protocol
+from twisted.internet.protocol import Protocol, defer
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 from proxy import ProxyConnector
@@ -19,7 +19,7 @@ class ClientConnector(Protocol):
         - Initiate connection to client.
         - Send an authentication message to client to start transmission.
         - Receive encrypted data packets from client, separated by split_char.
-        - Decrypt data packets. Determine the ID (first 2 bytes of decrypted text).
+        - Decrypt data packets. Get the ID (first 2 bytes of decrypted text).
           Create a connection to HTTP proxy for each unique ID.
         - Forward request to HTTP proxy. Encrypt and send back the response.
         - Close connection to HTTP proxy for a given ID if a packet
@@ -53,6 +53,8 @@ class ClientConnector(Protocol):
         # Create an endpoint for the HTTP proxy
         host, port = "127.0.0.1", self.proxy_port
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
+
+        self.cutter = None
 
     def generate_auth_msg(self):
         """Generate encrypted message.
@@ -100,6 +102,12 @@ class ClientConnector(Protocol):
         logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
+
+        # Cut the connection after a random time
+        self.cutter = defer.Deferred()
+        self.cutter.addCallback(self.connectionLost("reset"))
+        cuttime = choice([35, 50, 70, 90])
+        reactor.callLater(cuttime, self.cutter.callback)
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.

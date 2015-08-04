@@ -21,16 +21,13 @@ class Coordinator(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-    def __init__(self, proxy_port, tor_port, pri, certs, client_port):
+    def __init__(self, proxy_port, tor_port, pri, certs):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
         # dicts matching sha-1 to clients' public keys and creators
         self.certs = certs
         self.creators = dict()
-
-        # TODO: deprecate this parameter
-        self.client_port = client_port
 
         # Create an endpoint of Tor
         if self.tor_port:
@@ -45,21 +42,23 @@ class Coordinator(DatagramProtocol):
 
         The encrypted message should be
             salt +
-            required_connection_number (HEX, 2 bytes)
+            required_connection_number (HEX, 2 bytes) +
+            client_listen_port (HEX, 4 bytes) +
             sha1(local_pub) +
             client_sign(salt) +
             server_pub(main_pw)
-        Total length is 16 + 2 + 40 + 512 + 256 = 826 bytes
+        Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
         """
-        assert len(msg) == 826
-        salt, number_hex, client_sha1, salt_sign_hex, main_pw_enc = \
-            msg[:16], msg[16:18], msg[18:58], msg[58:570], msg[570:]
+        assert len(msg) == 830
+        salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc = \
+            msg[:16], msg[16:18], msg[18:20], msg[20:60], msg[60:572], msg[572:]
         salt_sign = (int(salt_sign_hex, 16),)
         number = int(number_hex, 16)
         client_pub = self.certs[client_sha1]
         assert client_pub.verify(salt, salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
-        return main_pw, client_sha1, number
+        remote_port = int(port_hex), 16
+        return main_pw, client_sha1, number, remote_port
 
     def datagramReceived(self, data, addr):
         """Event handler of receiving a UDP request.
@@ -68,14 +67,11 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
         host, udp_port = addr
-        logging.info("received udp request from " +
+        logging.info("received udp request from " + 
                      host + ":%d" % udp_port)
-        tcp_port = self.client_port
-
         try:
-            main_pw, client_sha1, number = self.decrypt_udp_msg(data)
-
             # One creator corresponds to one client (with a unique SHA1)
+            main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(data)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
                 creator = ClientConnectorCreator(
