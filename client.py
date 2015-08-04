@@ -1,11 +1,11 @@
 import logging
 from utils import addr_to_str
-from random import choice
+from random import choice, randrange
 from string import letters as L
 from string import digits as D
 from collections import deque
 from twisted.internet import reactor
-from twisted.internet.protocol import Protocol, defer
+from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 from proxy import ProxyConnector
@@ -54,8 +54,6 @@ class ClientConnector(Protocol):
         host, port = "127.0.0.1", self.proxy_port
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
-        self.cutter = None
-
     def generate_auth_msg(self):
         """Generate encrypted message.
 
@@ -103,11 +101,9 @@ class ClientConnector(Protocol):
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
 
-        # Cut the connection after a random time
-        self.cutter = defer.Deferred()
-        self.cutter.addCallback(self.connectionLost("reset"))
-        cuttime = choice([35, 50, 70, 90])
-        reactor.callLater(cuttime, self.cutter.callback)
+        # Reset the connection after a random time
+        expire_time = randrange(30, 90)
+        reactor.callLater(expire_time, self.reset)
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.
@@ -192,6 +188,14 @@ class ClientConnector(Protocol):
         """
         self.write_client(self.close_char, conn_id)
         self.del_proxy_conn(conn_id)
+
+    def reset(self):
+        """Called after a random time to reset a existing connection to client.
+
+        May result in better performance.
+        """
+        self.loseConnection()
+        # TODO: existing IDs should be re-allocated
 
     def clean(self):
         """Close all connections to proxy.
