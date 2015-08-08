@@ -1,6 +1,6 @@
 import logging
 from collections import deque
-from random import randrange, choice
+from random import expovariate, choice
 from utils import addr_to_str
 from client import ClientConnector
 from proxy import ProxyConnector
@@ -98,7 +98,7 @@ class Control:
         self.client_connectors.add(conn)
 
         # Reset the connection after a random time
-        expire_time = randrange(30, 90)
+        expire_time = expovariate(1.0 / 60)
         reactor.callLater(expire_time, self.client_reset, conn)
 
         self.connect()
