@@ -52,7 +52,7 @@ class ProxyConnector(Protocol):
         """
         if not self.dead:
             logging.info("proxy connection %s lost" % self.conn_id)
-            self.write()
+            self.respond()
             self.initiator.proxy_finish(self.conn_id)
 
     def respond(self):
