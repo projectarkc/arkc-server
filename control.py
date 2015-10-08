@@ -7,7 +7,7 @@ from proxy import ProxyConnector
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
-
+import time
 
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
@@ -164,8 +164,16 @@ class Control:
         Triggered by proxy_recv or proxy_finish.
         """
         # TODO: use an algorithm to pick the optimal connector
-        conn = choice(self.client_connectors)
-        conn.write(data, conn_id)
+        # TODO: use an error return value when self.client_connectors = []
+        
+        i = 0
+        while i <= 5 and len(self.client_connectors) == 0:
+            time.sleep(0.02)
+        if len(self.client_connectors) > 0:
+            conn = choice(self.client_connectors)
+            conn.write(data, conn_id)
+        else:
+            logging.error("no client_connectiors available, %i dumped." % len(data))
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
@@ -211,7 +219,7 @@ class Control:
         conn = self.proxy_connectors[conn_id]
         conn.dead = True
         logging.warning("proxy connection %s lost unexpectedly" % conn_id)
-        conn.write()
+        conn.dataReceived("")
         self.proxy_finish(conn_id)
 
     def proxy_finish(self, conn_id):
