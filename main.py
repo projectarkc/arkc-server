@@ -17,7 +17,7 @@ def start_proxy(port):
     i.e. the client handler forwards clients' requests to the proxy,
     and the proxy is reponsible for communicating with the target server.
 
-    It is suggested that a external HTTP proxy is specified
+    It is suggested that an external HTTP proxy is specified
     in place of the internal one,
     for performance and stability considerations.
     See command line arguments for detailed information.

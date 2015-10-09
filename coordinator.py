@@ -25,7 +25,7 @@ class Coordinator(DatagramProtocol):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
-        # dicts matching sha-1 to clients' public keys and creators
+        # dict mapping sha-1 to clients' public keys and creators
         self.certs = certs
         self.creators = dict()
 
