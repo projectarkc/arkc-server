@@ -128,7 +128,7 @@ class Control:
         logging.info("deleting connection id " + conn_id)
         try:
             assert self.write_queues.pop(conn_id, None) is not None
-            assert self.proxy_connectors.pop(conn_id, None)
+            assert self.proxy_connectors.pop(conn_id, None) is not None
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
 
@@ -187,7 +187,7 @@ class Control:
         """Forward all the data pending for the ID to the HTTP proxy."""
         while conn_id in self.write_queues and self.write_queues[conn_id]:
             data = self.write_queues[conn_id].popleft()
-            if data:
+            if data is not None:
                 conn = self.proxy_connectors[conn_id]
                 if not conn.transport:
                     self.proxy_lost(conn_id)
