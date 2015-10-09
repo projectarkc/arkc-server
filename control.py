@@ -40,7 +40,7 @@ class Control:
         self.number = 0
         self.max_retry = 5
         self.retry_count = 0
-        self.client_connectors = set()
+        self.client_connectors = []
 
         # maps ID to decrypted data segments
         self.write_queues = dict()
@@ -95,7 +95,7 @@ class Control:
         is reached.
         """
         self.retry_count = 0
-        self.client_connectors.add(conn)
+        self.client_connectors.append(conn)
 
         # Reset the connection after a random time
         expire_time = expovariate(1.0 / 60)
@@ -211,7 +211,7 @@ class Control:
         conn = self.proxy_connectors[conn_id]
         conn.dead = True
         logging.warning("proxy connection %s lost unexpectedly" % conn_id)
-        conn.write()
+        conn.respond()
         self.proxy_finish(conn_id)
 
     def proxy_finish(self, conn_id):
