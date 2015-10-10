@@ -3,6 +3,7 @@ from utils import addr_to_str
 from os import urandom
 from twisted.internet.protocol import Protocol
 from utils import AESCipher
+import struct
 
 
 class ClientConnector(Protocol):
@@ -24,8 +25,9 @@ class ClientConnector(Protocol):
 
         self.main_pw = self.initiator.main_pw
         # control characters
-        self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
-        #self.split_char = chr(23) + self.main_pw[:4]
+        #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
+        self.split_char = chr(27)+chr(28)+"%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
+        print (self.split_char)
         
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
