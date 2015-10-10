@@ -70,6 +70,7 @@ class Coordinator(DatagramProtocol):
         # TODO: UDP message may not come from the same host as client
         host, udp_port = addr
         logging.info("received udp request from %s:%d" % (host, udp_port))
+        #print len(data)
         try:
             # One creator corresponds to one client (with a unique SHA1)
             main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(data)
