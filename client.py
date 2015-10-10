@@ -22,14 +22,14 @@ class ClientConnector(Protocol):
     def __init__(self, initiator):
         self.initiator = initiator
 
+        self.main_pw = self.initiator.main_pw
         # control characters
         self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
-
-        self.main_pw = self.initiator.main_pw
+        #self.split_char = chr(23) + self.main_pw[:4]
+        
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = urandom(16)
-
         self.cipher = AESCipher(self.session_pw, self.main_pw)
 
         self.buffer = ""
