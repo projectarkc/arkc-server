@@ -44,6 +44,7 @@ class Control:
 
         # maps ID to decrypted data segments
         self.write_queues = dict()
+        self.write_queues_index = dict()
 
         # maps ID to ProxyConnectors
         self.proxy_connectors = dict()
@@ -111,7 +112,8 @@ class Control:
         logging.info("adding connection id " + conn_id)
         try:
             assert conn_id not in self.write_queues
-            self.write_queues[conn_id] = deque()
+            self.write_queues[conn_id] = dict()
+            self.write_queues_index[conn_id] = 100
             self.proxy_connectors[conn_id] = ProxyConnector(self, conn_id)
             point, connector = self.proxy_point, self.proxy_connectors[conn_id]
             d = connectProtocol(point, connector)
@@ -137,7 +139,7 @@ class Control:
 
         Should be decrypted by ClientConnector first.
         """
-        conn_id, data = recv[:2], recv[2:]
+        conn_id, index, data = recv[:2], recv[2:5], recv[5:]
 
         if data == self.close_char:
             # close connection and remove the ID
@@ -153,9 +155,9 @@ class Control:
         else:
             if conn_id not in self.proxy_connectors:
                 self.new_proxy_conn(conn_id)
-                self.write_queues[conn_id].append(data)
+                self.write_queues[conn_id][index] = data
             else:
-                self.write_queues[conn_id].append(data)
+                self.write_queues[conn_id][index] = data
                 self.proxy_write(conn_id)
 
     def client_write(self, data, conn_id):
@@ -193,8 +195,9 @@ class Control:
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
-        while conn_id in self.write_queues and self.write_queues[conn_id]:
-            data = self.write_queues[conn_id].popleft()
+        while conn_id in self.write_queues and self.write_queues_index[conn_id] in self.write_queues[conn_id]:
+            data = self.write_queues[conn_id].pop(self.write_queues_index[conn_id])
+            self.next_write_index(conn_id)
             if data is not None:
                 conn = self.proxy_connectors[conn_id]
                 if not conn.transport:
@@ -229,3 +232,8 @@ class Control:
         """
         self.client_write(self.close_char, conn_id)
         self.del_proxy_conn(conn_id)
+
+    def next_write_index(self, conn_id):
+        self.write_queues_index[conn_id] += 1
+        if self.write_queues_index[conn_id] == 1000:
+            self.write_queues_index[conn_id] = 100
