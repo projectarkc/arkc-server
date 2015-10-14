@@ -97,7 +97,7 @@ class ClientConnector(Protocol):
         
         #TODO: should use buffer here and split to 4096 packages
         
-        to_write = self.cipher.encrypt(conn_id + self.writeindex + data) + self.split_char
+        to_write = self.cipher.encrypt(conn_id + "%i" % self.writeindex + data) + self.split_char
         self.writeindex += 1
         if self.writeindex == 1000:
             self.writeindex = 100
