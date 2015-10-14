@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     # UDP activation messages are sent to this port to request the server to
     # initiate connections to a client
-    parser.add_argument("-up", "--udp-port", default=9000, type=int,
+    parser.add_argument("-up", "--udp-port", default=53, type=int,
                         help="udp request listener port, 9000 by default")
 
     parser.add_argument('-ep', "--use-external-proxy", action="store_true",

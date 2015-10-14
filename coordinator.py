@@ -1,4 +1,5 @@
 import logging
+import dnslib
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -70,10 +71,12 @@ class Coordinator(DatagramProtocol):
         # TODO: UDP message may not come from the same host as client
         host, udp_port = addr
         logging.info("received udp request from %s:%d" % (host, udp_port))
-        #print len(data)
+        dnsq = dnslib.DNSQuestion.parse(data)
+        query_data = str(dnsq.q.qname).split('.')[0]
+        #print len(query_data)
         try:
             # One creator corresponds to one client (with a unique SHA1)
-            main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(data)
+            main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(query_data)
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1]
                 creator = Control(self, client_pub, host, tcp_port,
