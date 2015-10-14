@@ -1,5 +1,6 @@
 import logging
 import dnslib
+import binascii
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -54,11 +55,11 @@ class Coordinator(DatagramProtocol):
         salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc = \
             msg[:16], msg[16:18], msg[18:22], msg[22:62], msg[62:574], \
             msg[574:]
-        salt_sign = (int(salt_sign_hex, 16),)
+        salt_sign = (binascii.unhexlify(salt_sign_hex))
         number = int(number_hex, 16)
         client_pub = self.certs[client_sha1]
         assert client_pub.verify(salt, salt_sign)
-        main_pw = self.pri.decrypt(main_pw_enc)
+        main_pw = self.pri.decrypt(binascii.unhexlify(main_pw_enc))
         remote_port = int(port_hex, 16)
         return main_pw, client_sha1, number, remote_port
 
@@ -72,7 +73,7 @@ class Coordinator(DatagramProtocol):
         host, udp_port = addr
         logging.info("received udp request from %s:%d" % (host, udp_port))
         dnsq = dnslib.DNSQuestion.parse(data)
-        query_data = str(dnsq.q.qname).split('.')[0]
+        query_data = dnsq.q.qname.split('.')[0]
         #print len(query_data)
         try:
             # One creator corresponds to one client (with a unique SHA1)
