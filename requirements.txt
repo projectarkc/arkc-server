@@ -1,3 +1,5 @@
 twisted
 pycrypto
 txsocksx
+pyotp
+ipaddress

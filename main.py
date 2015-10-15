@@ -67,11 +67,12 @@ if __name__ == "__main__":
     # currently stores only one pair
     certs = dict()
 
+    ##TODO: Use json files for certs
     try:
         with open(args.remote_cert_path, "r") as f:
             remote_cert_txt = f.read()
             remote_cert = RSA.importKey(remote_cert_txt)
-            certs[sha1(remote_cert_txt).hexdigest()] = remote_cert
+            certs[sha1(remote_cert_txt).hexdigest()] = (remote_cert, remote_pri_sha1)
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)

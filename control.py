@@ -28,11 +28,12 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, host, port, main_pw, req_num):
+    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
         self.client_pub = client_pub
+        self.client_pri_sha1 = client_pri_sha1
         self.host = host
         self.port = port
         self.main_pw = main_pw
