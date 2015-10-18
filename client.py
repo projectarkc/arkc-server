@@ -74,18 +74,18 @@ class ClientConnector(Protocol):
         # a list of encrypted data packages
         # the last item may be incomplete
         recv = self.buffer.split(self.split_char)
-        if self.authed:
-            # leave the last (may be incomplete) item intact
-            for text_enc in recv[:-1]:
-                text_dec = self.cipher.decrypt(text_enc)
-                self.initiator.client_recv(text_dec)
-        else:
-            if len(recv) > 1:
-                try:
-                    assert self.client_pub.decrypt(recv[0]) == pyotp.HOTP(self.initiator.client_pri_sha1)
-                except AssertionError as err:
-                    logging.error("client cannot be authenticated. conn closing.")
-                    self.connectionLost()
+        #if self.authed:
+        # leave the last (may be incomplete) item intact
+        for text_enc in recv[:-1]:
+            text_dec = self.cipher.decrypt(text_enc)
+            self.initiator.client_recv(text_dec)
+        #else:
+    #        if len(recv) > 1:
+    #            try:
+    #                assert self.client_pub.decrypt(recv[0]) == pyotp.HOTP(self.initiator.client_pri_sha1)
+    #            except AssertionError as err:
+    #                logging.error("client cannot be authenticated. conn closing.")
+    #                self.connectionLost()
 
         self.buffer = recv[-1]  # incomplete message
 

@@ -41,7 +41,7 @@ class Coordinator(DatagramProtocol):
         else:
             self.tor_point = None
 
-    def decrypt_udp_msg(self, msg1, msg2, msg3, msg4):
+    def decrypt_udp_msg(self, msg1, msg2, msg3, msg4, msg5):
         """Return (main_pw, client_sha1, number).
 
             The encrypted message should be
@@ -50,19 +50,22 @@ class Coordinator(DatagramProtocol):
             sha1(cert_pub) ,
             pyotp.HOTP(time) , ## TODO: client identity must be checked
             main_pw,
-            ip_in_number_form
-            Total length is 2 + 4 + 40 = 46, 16, 16, ?
+            ip_in_number_form,
+            salt
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
         
         assert len(msg1) == 46
         assert len(msg2) == 16
         assert len(msg3) == 16
+        assert len(msg5) == 16
         number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6, 46]
-        assert msg2 == pyotp.HOTP(self.certs[client_sha1](1))
+        remote_ip = str(ipaddress.ip_address(msg4))
+        assert msg2 == pyotp.HOTP(self.certs[client_sha1](1) + remote_ip + binascii.unhexlify(msg5))
         main_pw = binascii.unhexlify(msg3)
         number = int(number_hex, 16)
         remote_port = int(port_hex, 16)
-        remote_ip = str(ipaddress.ip_address(msg4))
+        
         return main_pw, client_sha1, number, remote_port, remote_ip
 
     def datagramReceived(self, data, addr):
@@ -79,12 +82,12 @@ class Coordinator(DatagramProtocol):
             # One creator corresponds to one client (with a unique SHA1) 
             #TODO: Use ip addr to support multiple conns
             
-            assert len(query_data) == 4
+            assert len(query_data) == 5
             
-            main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3])
+            main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3], query_data[4])
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1](0)
-                creator = Control(self, client_pub, self.certs[client_sha1](1) remote_ip, tcp_port,
+                creator = Control(self, client_pub, self.certs[client_sha1](1), remote_ip, tcp_port,
                                   main_pw, number)
                 self.creators[client_sha1] = creator
             else:
