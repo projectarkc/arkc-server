@@ -10,22 +10,43 @@ Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is currently not s
 
 For Debian or Ubuntu users:
 
-    sudo apt-get install python-virtualenv python-dev
-    virtualenv ~/virtualenvs/arkc-server
-    . ~/virtualenvs/arkc-server/bin/activate
-    pip install -r requirements.txt
-    chmod +x install.sh
-    ./install.sh
+```
+sudo apt-get install python-virtualenv python-dev
+virtualenv ~/virtualenvs/arkc-server
+. ~/virtualenvs/arkc-server/bin/activate
+pip install -r requirements.txt
+chmod +x install.sh
+./install.sh
+```
 
 ##Usage
 
 Run
 
-	python main.py [-h] [-v] [-up UDP_PORT] [-ep (use external proxy)] 
-		[-pp PROXY_PORT (local, HTTP)] [-tp TOR_PORT (local, SOCKS4)]
-               [-rp REMOTE_PORT (remote host listens on)] -rc REMOTE_CERT_PATH -lc LOCAL_CERT_PATH
+```
+python main.py [-h] [-v] [-ep (use external proxy)] [-c <Path of the config Json file, default = config.json>]
+```
 
 In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
+
+For the configuration file, you can find an example here:
+
+```
+{
+        "remote_cert_path":"/home/tony/arkc/testfiles/client.pub",
+        "local_cert_path":"/home/tony/arkc/testfiles/server"
+}
+```
+
+For a full list of settings:
+
+| Index name            | Value Type & Description | Required / Default   |
+| ----------------------|:------------------------:| --------------------:|
+| udp_port              | int, udp listening port  | (0.0.0.0:)9000       |
+| proxy_port            | int, local/ext proxy port| 8100(local)/8123(ext)|
+| tor_port              | int, tor socks port      | 0 (Unused)           |
+| local_cert_path       | str, path of client pub  | REQUIRED             |
+| remote_cert_path      | str, path of server pri  | REQUIRED             |
 
 ##Acknowledgements
 
