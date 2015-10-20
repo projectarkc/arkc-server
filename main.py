@@ -60,6 +60,9 @@ if __name__ == "__main__":
     parser.add_argument("-lc", "--local-cert", type=str, required=True,
                         help="server private key (REQUIRED)",
                         dest="local_cert_path")
+    parser.add_argument("-rp-sha1", "--remote-pri-sha1", type=str, required=True,
+                        help="sha1 of client private key (REQUIRED)",
+                        dest="remote_pri_sha1")
 
     args = parser.parse_args()
 
@@ -72,7 +75,7 @@ if __name__ == "__main__":
         with open(args.remote_cert_path, "r") as f:
             remote_cert_txt = f.read()
             remote_cert = RSA.importKey(remote_cert_txt)
-            certs[sha1(remote_cert_txt).hexdigest()] = (remote_cert, remote_pri_sha1)
+            certs[sha1(remote_cert_txt).hexdigest()] = (remote_cert, args.remote_pri_sha1)
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
