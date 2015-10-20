@@ -1,5 +1,4 @@
 import logging
-from collections import deque
 from random import expovariate, choice
 from utils import addr_to_str
 from client import ClientConnector

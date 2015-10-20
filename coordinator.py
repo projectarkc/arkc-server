@@ -54,6 +54,7 @@ class Coordinator(DatagramProtocol):
             salt
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
+        # TODO: create a used salt list keeping updated against repplay DDoS
         
         assert len(msg1) == 46
         assert len(msg2) == 16

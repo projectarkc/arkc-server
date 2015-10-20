@@ -13,7 +13,7 @@ class ProxyConnector(Protocol):
     def __init__(self, initiator, conn_id):
         self.initiator = initiator
         self.conn_id = conn_id
-        self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
+        #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.buffer = ''
         self.write_queue = deque()
         self.segment_size = 4094    # 4096(total)-2(id)
