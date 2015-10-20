@@ -27,7 +27,6 @@ class ClientConnector(Protocol):
         # control characters
         #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.split_char = chr(27)+chr(28)+"%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
-        print (self.split_char)
         
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
@@ -97,7 +96,7 @@ class ClientConnector(Protocol):
         
         #TODO: should use buffer here and split to 4096 packages
         
-        to_write = self.cipher.encrypt(conn_id + self.writeindex + data) + self.split_char
+        to_write = self.cipher.encrypt(conn_id + str(self.writeindex) + data) + self.split_char
         self.writeindex += 1
         if self.writeindex == 1000:
             self.writeindex = 100

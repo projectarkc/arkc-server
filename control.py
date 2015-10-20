@@ -139,7 +139,7 @@ class Control:
 
         Should be decrypted by ClientConnector first.
         """
-        conn_id, index, data = recv[:2], recv[2:5], recv[5:]
+        conn_id, index, data = recv[:2], int(recv[2:5]), recv[5:]
 
         if data == self.close_char:
             # close connection and remove the ID
@@ -195,6 +195,7 @@ class Control:
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
+        
         while conn_id in self.write_queues and self.write_queues_index[conn_id] in self.write_queues[conn_id]:
             data = self.write_queues[conn_id].pop(self.write_queues_index[conn_id])
             self.next_write_index(conn_id)
