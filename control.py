@@ -43,8 +43,10 @@ class Control:
         self.client_connectors = []
 
         # maps ID to decrypted data segments
-        self.write_queues = dict()
-        self.write_queues_index = dict()
+        self.proxy_write_queues = dict()
+        self.proxy_write_queues_index = dict()
+        
+        self.client_write_queues_index = dict()
 
         # maps ID to ProxyConnectors
         self.proxy_connectors = dict()
@@ -111,9 +113,9 @@ class Control:
         """
         logging.info("adding connection id " + conn_id)
         try:
-            assert conn_id not in self.write_queues
-            self.write_queues[conn_id] = dict()
-            self.write_queues_index[conn_id] = 100
+            assert conn_id not in self.proxy_write_queues
+            self.proxy_write_queues[conn_id] = dict()
+            self.proxy_write_queues_index[conn_id] = 100
             self.proxy_connectors[conn_id] = ProxyConnector(self, conn_id)
             point, connector = self.proxy_point, self.proxy_connectors[conn_id]
             d = connectProtocol(point, connector)
@@ -129,7 +131,7 @@ class Control:
         """
         logging.info("deleting connection id " + conn_id)
         try:
-            assert self.write_queues.pop(conn_id, None) is not None
+            assert self.proxy_write_queues.pop(conn_id, None) is not None
             assert self.proxy_connectors.pop(conn_id, None) is not None
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
@@ -155,9 +157,9 @@ class Control:
         else:
             if conn_id not in self.proxy_connectors:
                 self.new_proxy_conn(conn_id)
-                self.write_queues[conn_id][index] = data
+                self.proxy_write_queues[conn_id][index] = data
             else:
-                self.write_queues[conn_id][index] = data
+                self.proxy_write_queues[conn_id][index] = data
                 self.proxy_write(conn_id)
 
     def client_write(self, data, conn_id):
@@ -171,9 +173,14 @@ class Control:
         i = 0
         while i <= 5 and len(self.client_connectors) == 0:
             time.sleep(0.02)
+        if conn_id not in self.client_write_queues_index:
+            self.client_write_queues_index[conn_id] = 100
         if len(self.client_connectors) > 0:
             conn = choice(self.client_connectors)
-            conn.write(data, conn_id)
+            conn.write(data, conn_id, self.client_write_queues_index[conn_id])
+            self.client_write_queues_index[conn_id] += 1
+            if self.client_write_queues_index[conn_id] == 1000:
+                self.client_write_queues_index[conn_id] = 100
         else:
             logging.error("no client_connectiors available, %i dumped." % len(data))
 
@@ -196,8 +203,8 @@ class Control:
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
         
-        while conn_id in self.write_queues and self.write_queues_index[conn_id] in self.write_queues[conn_id]:
-            data = self.write_queues[conn_id].pop(self.write_queues_index[conn_id])
+        while conn_id in self.proxy_write_queues and self.proxy_write_queues_index[conn_id] in self.proxy_write_queues[conn_id]:
+            data = self.proxy_write_queues[conn_id].pop(self.proxy_write_queues_index[conn_id])
             self.next_write_index(conn_id)
             if data is not None:
                 conn = self.proxy_connectors[conn_id]
@@ -235,6 +242,6 @@ class Control:
         self.del_proxy_conn(conn_id)
 
     def next_write_index(self, conn_id):
-        self.write_queues_index[conn_id] += 1
-        if self.write_queues_index[conn_id] == 1000:
-            self.write_queues_index[conn_id] = 100
+        self.proxy_write_queues_index[conn_id] += 1
+        if self.proxy_write_queues_index[conn_id] == 1000:
+            self.proxy_write_queues_index[conn_id] = 100

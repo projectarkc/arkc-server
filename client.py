@@ -34,7 +34,7 @@ class ClientConnector(Protocol):
         self.cipher = AESCipher(self.session_pw, self.main_pw)
 
         self.buffer = ""
-        self.writeindex = 100
+        self.writeindex = {}
 
     def generate_auth_msg(self):
         """Generate encrypted message.
@@ -87,7 +87,7 @@ class ClientConnector(Protocol):
                      addr_to_str(self.transport.getPeer()))
         self.initiator.client_lost(self)
 
-    def write(self, data, conn_id):
+    def write(self, data, conn_id, index):
         """Encrypt and write data the client.
 
         Encrypted packets should be separated by split_char.
@@ -96,10 +96,7 @@ class ClientConnector(Protocol):
         
         #TODO: should use buffer here and split to 4096 packages
         
-        to_write = self.cipher.encrypt(conn_id + str(self.writeindex) + data) + self.split_char
-        self.writeindex += 1
-        if self.writeindex == 1000:
-            self.writeindex = 100
+        to_write = self.cipher.encrypt(conn_id + str(index) + data) + self.split_char
         logging.info("sending %d bytes to client %s with id %s" % (len(data),
                      addr_to_str(self.transport.getPeer()),
                      conn_id))
