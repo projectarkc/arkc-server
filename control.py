@@ -167,12 +167,11 @@ class Control:
 
         Triggered by proxy_recv or proxy_finish.
         """
-        # TODO: use an algorithm to pick the optimal connector
-        # TODO: use an error return value when self.client_connectors = []
         
         i = 0
         while i <= 5 and len(self.client_connectors) == 0:
             time.sleep(0.02)
+        assert len(self.client_connectors) != 0
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
         if len(self.client_connectors) > 0:
@@ -222,7 +221,12 @@ class Control:
 
     def proxy_recv(self, data, conn_id):
         """Call client_write on receiving data from proxy."""
-        self.client_write(data, conn_id)
+        try:
+            self.client_write(data, conn_id)
+        except AssertionError as err:
+            logging.error("%i dumped from proxy for no connections with the client")
+            logging.error("related proxy connection closing")
+            self.proxy_lost(conn_id)
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.
@@ -241,7 +245,8 @@ class Control:
 
         Called when proxy connection is lost.
         """
-        self.client_write(self.close_char, conn_id)
+        if len(self.client_connectors) != 0:
+            self.client_write(self.close_char, conn_id)
         self.del_proxy_conn(conn_id)
 
     def next_write_index(self, conn_id):
