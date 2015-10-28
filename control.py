@@ -189,7 +189,10 @@ class Control:
 
         May result in better performance.
         """
-        conn.transport.loseConnection()
+        #conn.transport.loseConnection()
+        self.client_lost(conn)
+        conn.write(self.close_char, "00", 100)
+        reactor.callLater(1.0, conn.ConnectionLost)
 
     def client_lost(self, conn):
         """Triggered by a ClientConnector's connectionLost method.
