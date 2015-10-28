@@ -4,6 +4,7 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from control import Control
 
+MAX_SALT_BUFFER = 255
 
 class ClientAddrChanged(Exception):
     pass
@@ -21,6 +22,8 @@ class Coordinator(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
+    
+    
     def __init__(self, proxy_port, tor_port, pri, certs):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
@@ -28,6 +31,7 @@ class Coordinator(DatagramProtocol):
         # dict mapping sha-1 to clients' public keys and creators
         self.certs = certs
         self.creators = dict()
+        self.recentsalt = []
 
         # Create an endpoint of Tor
         if self.tor_port:
@@ -53,12 +57,17 @@ class Coordinator(DatagramProtocol):
         salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc = \
             msg[:16], msg[16:18], msg[18:22], msg[22:62], msg[62:574], \
             msg[574:]
+        if salt in self.recentsalt:
+            return (None, None, None, None)
         salt_sign = (int(salt_sign_hex, 16),)
         number = int(number_hex, 16)
         client_pub = self.certs[client_sha1]
         assert client_pub.verify(salt, salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
         remote_port = int(port_hex, 16)
+        if len(self.recentsalt) >= MAX_SALT_BUFFER:
+            self.recentsalt.pop(0)
+        self.recentsalt.append(salt)
         return main_pw, client_sha1, number, remote_port
 
     def datagramReceived(self, data, addr):
