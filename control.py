@@ -200,9 +200,9 @@ class Control:
         """
         try:
             self.client_connectors.remove(conn)
+            self.number -= 1 ##TODO: Whereelse is the number reduced?
         except ValueError as err:
             pass
-        self.number -= 1
         self.connect()
 
     def proxy_write(self, conn_id):
