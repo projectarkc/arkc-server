@@ -60,8 +60,10 @@ class Coordinator(DatagramProtocol):
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
         assert len(msg1) == 46
-        if msg5 in self.recentsalt:
-            return (None, None, None, None, None)
+        
+        #if msg5 in self.recentsalt:
+        #    return (None, None, None, None, None)
+        
         #assert len(msg2) == 16
         #assert len(msg3) == 16
         #assert len(msg5) == 16
@@ -84,7 +86,7 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a ClientConnectorCreator
         to it if it is trusted.
         """
-        logging.info("received DNS request from %s:%d" % (host, udp_port))
+        logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         dnsq = dnslib.DNSRecord.parse(data)
         query_data = str(dnsq.q.qname).split('.')
         try:
@@ -94,6 +96,8 @@ class Coordinator(DatagramProtocol):
             #assert len(query_data) == 5
             
             main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3], query_data[4])
+            print self.certs
+            print client_sha1
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1][0]
                 creator = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
@@ -109,8 +113,8 @@ class Coordinator(DatagramProtocol):
 
             creator.connect()
 
-        except KeyError:
-            logging.error("untrusted client")
+        #except KeyError:
+        #    logging.error("untrusted client")
         #except AssertionError:
         #    logging.error("authentication failed or corrupted request")
         except ClientAddrChanged:
