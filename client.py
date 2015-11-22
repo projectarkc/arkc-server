@@ -28,9 +28,7 @@ class ClientConnector(Protocol):
         # control characters
         #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         #TODO: Using public main_pw is vulnerable
-        self.split_char = chr(27)+chr(28)+"%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
-        print (self.split_char)
-        
+        self.split_char = chr(27)+chr(28)+"%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)        
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = urandom(16)

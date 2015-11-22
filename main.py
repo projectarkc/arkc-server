@@ -85,7 +85,7 @@ if __name__ == "__main__":
         with open(data["remote_cert_path"], "r") as f:
             remote_cert_txt = f.read()
             remote_cert = RSA.importKey(remote_cert_txt)
-            certs[sha1(remote_cert_txt).hexdigest()] = remote_cert
+            certs[sha1(remote_cert_txt).hexdigest()] = [remote_cert, "da39a3ee5e6b4b0d3255bfef95601890afd80709"] ##TODO: Client-side private sha1 should be pre-stored.
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
