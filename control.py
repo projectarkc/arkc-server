@@ -1,5 +1,4 @@
 import logging
-from collections import deque
 from random import expovariate, choice
 from utils import addr_to_str
 from client import ClientConnector
@@ -28,11 +27,12 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, host, port, main_pw, req_num):
+    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
         self.client_pub = client_pub
+        self.client_pri_sha1 = client_pri_sha1
         self.host = host
         self.port = port
         self.main_pw = main_pw
@@ -211,7 +211,7 @@ class Control:
         while conn_id in self.proxy_write_queues and self.proxy_write_queues_index[conn_id] in self.proxy_write_queues[conn_id]:
             data = self.proxy_write_queues[conn_id].pop(self.proxy_write_queues_index[conn_id])
             self.next_write_index(conn_id)
-            if data is not None:
+            if data is not None and len(data) > 0:
                 conn = self.proxy_connectors[conn_id]
                 if not conn.transport:
                     self.proxy_lost(conn_id)

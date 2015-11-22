@@ -4,6 +4,7 @@ from os import urandom
 from twisted.internet.protocol import Protocol
 from utils import AESCipher
 import struct
+import pyotp
 
 
 class ClientConnector(Protocol):
@@ -27,7 +28,6 @@ class ClientConnector(Protocol):
         # control characters
         #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.split_char = chr(27)+chr(28)+"%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
-        
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = urandom(16)
@@ -70,11 +70,18 @@ class ClientConnector(Protocol):
         # a list of encrypted data packages
         # the last item may be incomplete
         recv = self.buffer.split(self.split_char)
-
+        #if self.authed:
         # leave the last (may be incomplete) item intact
         for text_enc in recv[:-1]:
             text_dec = self.cipher.decrypt(text_enc)
             self.initiator.client_recv(text_dec)
+        #else:
+    #        if len(recv) > 1:
+    #            try:
+    #                assert self.client_pub.decrypt(recv[0]) == pyotp.HOTP(self.initiator.client_pri_sha1)
+    #            except AssertionError as err:
+    #                logging.error("client cannot be authenticated. conn closing.")
+    #                self.connectionLost()
 
         self.buffer = recv[-1]  # incomplete message
 
@@ -95,7 +102,7 @@ class ClientConnector(Protocol):
         """
         
         #TODO: should use buffer here and split to 4096 packages
-        
+
         to_write = self.cipher.encrypt(conn_id + str(index) + data) + self.split_char
         logging.info("sending %d bytes to client %s with id %s" % (len(data),
                      addr_to_str(self.transport.getPeer()),

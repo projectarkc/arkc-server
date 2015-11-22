@@ -6,7 +6,6 @@ from twisted.internet.protocol import Protocol
 
 class ProxyConnector(Protocol):
     """Handle a single connection to the HTTP proxy.
-
     Initiated by a ClientConnector (passed as self.initiator).
     One ProxyConnector corresponds to a unique ID.
     """
@@ -14,7 +13,7 @@ class ProxyConnector(Protocol):
     def __init__(self, initiator, conn_id):
         self.initiator = initiator
         self.conn_id = conn_id
-        self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
+        #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.buffer = ''
         self.write_queue = deque()
         self.segment_size = 4094    # 4096(total)-2(id)
@@ -30,7 +29,6 @@ class ProxyConnector(Protocol):
 
     def dataReceived(self, response):
         """Event handler of receiving data from HTTP proxy.
-
         Will cut them into segments and call self.respond() to write them.
         """
         logging.info("received %d bytes from proxy with id %s" %
@@ -46,7 +44,6 @@ class ProxyConnector(Protocol):
 
     def connectionLost(self, reason):
         """Event handler of losing proxy connection.
-
         Exclude the situation when self.transport has already become None
         but this event has not been triggered.
         """
@@ -57,7 +54,6 @@ class ProxyConnector(Protocol):
 
     def respond(self):
         """Send all data to Control.
-
         Pass the segments one by one to Control's proxy_recv method.
         """
         while self.write_queue:

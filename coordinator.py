@@ -1,4 +1,9 @@
 import logging
+import dnslib
+import hashlib
+import binascii
+import pyotp
+import ipaddress
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -41,34 +46,37 @@ class Coordinator(DatagramProtocol):
         else:
             self.tor_point = None
 
-    def decrypt_udp_msg(self, msg):
+    def decrypt_udp_msg(self, msg1, msg2, msg3, msg4, msg5):
         """Return (main_pw, client_sha1, number).
 
-        The encrypted message should be
-            salt +
-            required_connection_number (HEX, 2 bytes) +
-            client_listen_port (HEX, 4 bytes) +
-            sha1(local_pub) +
-            client_sign(salt) +
-            server_pub(main_pw)
-        Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
+            The encrypted message should be
+            (required_connection_number (HEX, 2 bytes) +
+            used_remote_listening_port (HEX, 4 bytes) +
+            sha1(cert_pub) ,
+            pyotp.TOTP(time) , ## TODO: client identity must be checked
+            main_pw,
+            ip_in_number_form,
+            salt
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
-        assert len(msg) == 830
-        salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc = \
-            msg[:16], msg[16:18], msg[18:22], msg[22:62], msg[62:574], \
-            msg[574:]
-        if salt in self.recentsalt:
-            return (None, None, None, None)
-        salt_sign = (int(salt_sign_hex, 16),)
+        assert len(msg1) == 46
+        if msg5 in self.recentsalt:
+            return (None, None, None, None, None)
+        #assert len(msg2) == 16
+        #assert len(msg3) == 16
+        #assert len(msg5) == 16
+        number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6:46]
+        remote_ip = str(ipaddress.ip_address(int(msg4)))
+        h=hashlib.sha256()
+        h.update(self.certs[client_sha1][1] + msg4 + msg5)
+        assert msg2 == pyotp.TOTP(h.hexdigest()).now()
+        main_pw = binascii.unhexlify(msg3)
         number = int(number_hex, 16)
-        client_pub = self.certs[client_sha1]
-        assert client_pub.verify(salt, salt_sign)
-        main_pw = self.pri.decrypt(main_pw_enc)
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
-        self.recentsalt.append(salt)
-        return main_pw, client_sha1, number, remote_port
+        self.recentsalt.append(msg5)
+        return main_pw, client_sha1, number, remote_port, remote_ip
 
     def datagramReceived(self, data, addr):
         """Event handler of receiving a UDP request.
@@ -76,15 +84,19 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a ClientConnectorCreator
         to it if it is trusted.
         """
-        # TODO: UDP message may not come from the same host as client
-        host, udp_port = addr
-        logging.info("received udp request from %s:%d" % (host, udp_port))
+        logging.info("received DNS request from %s:%d" % (host, udp_port))
+        dnsq = dnslib.DNSRecord.parse(data)
+        query_data = str(dnsq.q.qname).split('.')
         try:
-            # One creator corresponds to one client (with a unique SHA1)
-            main_pw, client_sha1, number, tcp_port = self.decrypt_udp_msg(data)
+            # One creator corresponds to one client (with a unique SHA1) 
+            #TODO: Use ip addr to support multiple conns
+            
+            #assert len(query_data) == 5
+            
+            main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3], query_data[4])
             if client_sha1 not in self.creators:
-                client_pub = self.certs[client_sha1]
-                creator = Control(self, client_pub, host, tcp_port,
+                client_pub = self.certs[client_sha1][0]
+                creator = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
                                   main_pw, number)
                 self.creators[client_sha1] = creator
             else:
@@ -92,16 +104,16 @@ class Coordinator(DatagramProtocol):
                 if main_pw != creator.main_pw:
                     creator.main_pw = main_pw
                     logging.warning("main password changed")
-                if host != creator.host or tcp_port != creator.port:
+                if remote_ip != creator.host or tcp_port != creator.port:
                     raise ClientAddrChanged
 
             creator.connect()
 
         except KeyError:
             logging.error("untrusted client")
-        except AssertionError:
-            logging.error("authentication failed")
+        #except AssertionError:
+        #    logging.error("authentication failed or corrupted request")
         except ClientAddrChanged:
-            logging.error("client address changed")
-        except Exception as err:
-            logging.error("unknown error: " + str(err))
+            logging.error("client address or port changed")
+        #except Exception as err:
+        #    logging.error("unknown error: " + str(err))
