@@ -62,7 +62,7 @@ class Coordinator(DatagramProtocol):
         assert len(msg5) == 16
         number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6, 46]
         remote_ip = str(ipaddress.ip_address(msg4))
-        assert msg2 == pyotp.HOTP(self.certs[client_sha1](1) + remote_ip + binascii.unhexlify(msg5))
+        assert msg2 == str(pyotp.TOTP(self.certs[client_sha1](1) + remote_ip + binascii.unhexlify(msg5)).now())
         main_pw = binascii.unhexlify(msg3)
         number = int(number_hex, 16)
         remote_port = int(port_hex, 16)
