@@ -14,6 +14,8 @@ MAX_SALT_BUFFER = 255
 class ClientAddrChanged(Exception):
     pass
 
+class Duplicateerror(Exception):
+    pass
 
 class Coordinator(DatagramProtocol):
 
@@ -61,8 +63,8 @@ class Coordinator(DatagramProtocol):
         """
         assert len(msg1) == 46
         
-        #if msg5 in self.recentsalt:
-        #    return (None, None, None, None, None)
+        if msg5 in self.recentsalt:
+            return (None, None, None, None, None)
         
         #assert len(msg2) == 16
         #assert len(msg3) == 16
@@ -96,8 +98,8 @@ class Coordinator(DatagramProtocol):
             #assert len(query_data) == 5
             
             main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3], query_data[4])
-            print self.certs
-            print client_sha1
+            if client_sha1 == None:
+                raise Duplicateerror
             if client_sha1 not in self.creators:
                 client_pub = self.certs[client_sha1][0]
                 creator = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
@@ -113,11 +115,13 @@ class Coordinator(DatagramProtocol):
 
             creator.connect()
 
-        #except KeyError:
-        #    logging.error("untrusted client")
-        #except AssertionError:
-        #    logging.error("authentication failed or corrupted request")
+        except Duplicateerror:
+            pass ##TODO:should mimic DNS server
+        except KeyError:
+            logging.error("untrusted client")
+        except AssertionError:
+            logging.error("authentication failed or corrupted request")
         except ClientAddrChanged:
             logging.error("client address or port changed")
-        #except Exception as err:
-        #    logging.error("unknown error: " + str(err))
+        except Exception as err:
+            logging.error("unknown error: " + str(err))
