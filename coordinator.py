@@ -2,12 +2,13 @@ import logging
 import dnslib
 import hashlib
 import binascii
-import pyotp
 import ipaddress
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
+
 from control import Control
+import pyotp
 
 MAX_SALT_BUFFER = 255
 
@@ -71,7 +72,7 @@ class Coordinator(DatagramProtocol):
         
         number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6:46]
         remote_ip = str(ipaddress.ip_address(int(msg4)))
-        h=hashlib.sha256()
+        h = hashlib.sha256()
         h.update(self.certs[client_sha1][1] + msg4 + msg5)
         assert msg2 == pyotp.TOTP(h.hexdigest()).now()
         main_pw = binascii.unhexlify(msg3)
@@ -89,7 +90,7 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
         
-        ##Give a NXDOMAIN response
+        # #Give a NXDOMAIN response
         
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
@@ -99,12 +100,12 @@ class Coordinator(DatagramProtocol):
         query_data = str(dnsq.q.qname).split('.')
         try:
             # One creator corresponds to one client (with a unique SHA1) 
-            #TODO: Use ip addr to support multiple conns
+            # TODO: Use ip addr to support multiple conns
             
             if len(query_data) < 7:
                 raise CorruptedReq
             
-            main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3], query_data[4])
+            main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0], query_data[1], query_data[2], query_data[3], query_data[4])
             if client_sha1 == None:
                 raise Duplicateerror
             if client_sha1 not in self.creators:
@@ -125,7 +126,7 @@ class Coordinator(DatagramProtocol):
         except CorruptedReq:
             logging.info("Corrupted request")
         except Duplicateerror:
-            pass ##TODO:should mimic DNS server
+            pass  # #TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:

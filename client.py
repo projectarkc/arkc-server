@@ -1,11 +1,11 @@
 import logging
-from utils import addr_to_str
+
 from os import urandom
 from twisted.internet.protocol import Protocol
-from utils import AESCipher
 import struct
-import pyotp
 
+from utils import AESCipher
+from utils import addr_to_str
 
 class ClientConnector(Protocol):
     """Handle one connection to a client.
@@ -26,8 +26,8 @@ class ClientConnector(Protocol):
 
         self.main_pw = self.initiator.main_pw
         # control characters
-        #self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
-        self.split_char = chr(27)+chr(28)+"%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
+        # self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
+        self.split_char = chr(27) + chr(28) + "%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = urandom(16)
@@ -54,7 +54,7 @@ class ClientConnector(Protocol):
         Reset the connection after a random time (between 30 to 90 secs),
         and tell Control to re-add connection for better performance.
         """
-        logging.info("connected to client " +
+        logging.info("connected to client " + 
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
 
@@ -63,19 +63,19 @@ class ClientConnector(Protocol):
 
         Split, decrypt and hand them back to Control.
         """
-        logging.info("received %d bytes from client " % len(recv_data) +
+        logging.info("received %d bytes from client " % len(recv_data) + 
                      addr_to_str(self.transport.getPeer()))
         self.buffer += recv_data
 
         # a list of encrypted data packages
         # the last item may be incomplete
         recv = self.buffer.split(self.split_char)
-        #if self.authed:
+        # if self.authed:
         # leave the last (may be incomplete) item intact
         for text_enc in recv[:-1]:
             text_dec = self.cipher.decrypt(text_enc)
             self.initiator.client_recv(text_dec)
-        #else:
+        # else:
     #        if len(recv) > 1:
     #            try:
     #                assert self.client_pub.decrypt(recv[0]) == pyotp.HOTP(self.initiator.client_pri_sha1)
@@ -90,7 +90,7 @@ class ClientConnector(Protocol):
 
         Call Control to handle it.
         """
-        logging.info("client connection lost: " +
+        logging.info("client connection lost: " + 
                      addr_to_str(self.transport.getPeer()))
         self.initiator.client_lost(self)
 
@@ -101,7 +101,7 @@ class ClientConnector(Protocol):
         The first 2 bytes of a raw packet should be its ID.
         """
         
-        #TODO: should use buffer here and split to 4096 packages
+        # TODO: should use buffer here and split to 4096 packages
 
         to_write = self.cipher.encrypt(conn_id + str(index) + data) + self.split_char
         logging.info("sending %d bytes to client %s with id %s" % (len(data),

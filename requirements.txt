@@ -3,3 +3,4 @@ pycrypto
 txsocksx
 pyotp
 ipaddress
+dnslib

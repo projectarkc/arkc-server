@@ -1,12 +1,13 @@
 import logging
 from random import expovariate, choice
-from utils import addr_to_str
-from client import ClientConnector
-from proxy import ProxyConnector
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 import time
+
+from proxy import ProxyConnector
+from utils import addr_to_str
+from client import ClientConnector
 
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
@@ -188,7 +189,7 @@ class Control:
 
         May result in better performance.
         """
-        #conn.transport.loseConnection()
+        # conn.transport.loseConnection()
         self.client_lost(conn)
         conn.write(self.close_char, "00", 100)
         reactor.callLater(1.0, conn.connectionLost, None)
@@ -200,7 +201,7 @@ class Control:
         """
         try:
             self.client_connectors.remove(conn)
-            self.number -= 1 ##TODO: Whereelse is the number reduced?
+            self.number -= 1  # #TODO: Whereelse is the number reduced?
         except ValueError as err:
             pass
         self.connect()
