@@ -17,6 +17,9 @@ class ClientAddrChanged(Exception):
 class Duplicateerror(Exception):
     pass
 
+class CorruptedReq(Exception):
+    pass
+
 class Coordinator(DatagramProtocol):
 
     """Dispatch UDP requests to ClientConnectorCreators.
@@ -66,9 +69,6 @@ class Coordinator(DatagramProtocol):
         if msg5 in self.recentsalt:
             return (None, None, None, None, None)
         
-        #assert len(msg2) == 16
-        #assert len(msg3) == 16
-        #assert len(msg5) == 16
         number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6:46]
         remote_ip = str(ipaddress.ip_address(int(msg4)))
         h=hashlib.sha256()
@@ -88,14 +88,21 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a ClientConnectorCreator
         to it if it is trusted.
         """
+        
+        ##Give a NXDOMAIN response
+        
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
-        dnsq = dnslib.DNSRecord.parse(data)
+        try:
+            dnsq = dnslib.DNSRecord.parse(data)
+        except Exception as err:
+            logging.info("Corrupted request")
         query_data = str(dnsq.q.qname).split('.')
         try:
             # One creator corresponds to one client (with a unique SHA1) 
             #TODO: Use ip addr to support multiple conns
             
-            #assert len(query_data) == 5
+            if len(query_data) < 7:
+                raise CorruptedReq
             
             main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0],query_data[1],query_data[2],query_data[3], query_data[4])
             if client_sha1 == None:
@@ -115,6 +122,8 @@ class Coordinator(DatagramProtocol):
 
             creator.connect()
 
+        except CorruptedReq:
+            logging.info("Corrupted request")
         except Duplicateerror:
             pass ##TODO:should mimic DNS server
         except KeyError:
