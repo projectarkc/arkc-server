@@ -69,16 +69,16 @@ if __name__ == "__main__":
     # mapping SHA1 to RSA key object, will be passed to coordinator
     # currently stores only one pair
     certs = dict()
-    
+
     data = {}
-                
+
         # Load json configuration file
     try:
-        data_file = open(args.config)    
+        data_file = open(args.config)
         data = json.load(data_file)
         data_file.close()
     except Exception as err:
-        logging.error("Fatal error while loading configuration file.\n" + err)
+        logging.error("Fatal error while loading configuration file.\n" + str(err))
         quit()
 
     try:
@@ -104,17 +104,17 @@ if __name__ == "__main__":
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
 
-    if not args.use_external_proxy:    
+    if not args.use_external_proxy:
         if "proxy_port" not in data:
             data["proxy_port"] = 8100
         start_proxy(data["proxy_port"])
-    else:        
+    else:
         if "proxy_port" not in data:
             data["proxy_port"] = 8123
-            
+
     if "tor_port" not in data:
         data["tor_port"] = None
-            
+
     if "udp_port" not in data:
         data["udp_port"] = 53
         # #TODO: add proper notice for administrator privillege
