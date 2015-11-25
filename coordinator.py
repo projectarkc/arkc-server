@@ -33,15 +33,18 @@ class Coordinator(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-    
-    
+
     def __init__(self, proxy_port, tor_port, pri, certs):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
-        # dict mapping sha-1 to clients' public keys and creators
+
+        # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
+
+        # dict mapping client sha-1 to creator
         self.creators = dict()
+
         self.recentsalt = []
 
         # Create an endpoint of Tor
@@ -66,10 +69,10 @@ class Coordinator(DatagramProtocol):
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
         assert len(msg1) == 46
-        
+
         if msg5 in self.recentsalt:
             return (None, None, None, None, None)
-        
+
         number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6:46]
         remote_ip = str(ipaddress.ip_address(int(msg4)))
         h = hashlib.sha256()
@@ -89,9 +92,9 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a ClientConnectorCreator
         to it if it is trusted.
         """
-        
-        # #Give a NXDOMAIN response
-        
+
+        #Give a NXDOMAIN response
+
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
             dnsq = dnslib.DNSRecord.parse(data)
@@ -99,12 +102,12 @@ class Coordinator(DatagramProtocol):
             logging.info("Corrupted request")
         query_data = str(dnsq.q.qname).split('.')
         try:
-            # One creator corresponds to one client (with a unique SHA1) 
+            # One creator corresponds to one client (with a unique SHA1)
             # TODO: Use ip addr to support multiple conns
-            
+
             if len(query_data) < 7:
                 raise CorruptedReq
-            
+
             main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0], query_data[1], query_data[2], query_data[3], query_data[4])
             if client_sha1 == None:
                 raise Duplicateerror
@@ -126,7 +129,7 @@ class Coordinator(DatagramProtocol):
         except CorruptedReq:
             logging.info("Corrupted request")
         except Duplicateerror:
-            pass  # #TODO:should mimic DNS server
+            pass  #TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
