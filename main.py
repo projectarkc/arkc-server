@@ -66,13 +66,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # mapping SHA1 to RSA key object, will be passed to coordinator
-    # currently stores only one pair
+    # mapping client public sha1 --> (RSA key object, client private sha1)
     certs = dict()
 
     data = {}
 
-        # Load json configuration file
+    # Load json configuration file
     try:
         data_file = open(args.config)
         data = json.load(data_file)
@@ -82,10 +81,11 @@ if __name__ == "__main__":
         quit()
 
     try:
-        with open(data["remote_cert_path"], "r") as f:
-            remote_cert_txt = f.read()
-            remote_cert = RSA.importKey(remote_cert_txt)
-            certs[sha1(remote_cert_txt).hexdigest()] = [remote_cert, "da39a3ee5e6b4b0d3255bfef95601890afd80709"]  # #TODO: Client-side private sha1 should be pre-stored.
+        for client in data["clients"]:
+            with open(client[0], "r") as f:
+                remote_cert_txt = f.read()
+                remote_cert = RSA.importKey(remote_cert_txt)
+                certs[sha1(remote_cert_txt).hexdigest()] = [remote_cert, client[1]]
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)

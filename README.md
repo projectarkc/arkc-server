@@ -33,8 +33,11 @@ For the configuration file, you can find an example here:
 
 ```
 {
-        "remote_cert_path":"/home/tony/arkc/testfiles/client.pub",
-        "local_cert_path":"/home/tony/arkc/testfiles/server"
+    "local_cert_path": "/home/tony/arkc/testfiles/server",
+    "clients": [
+        ["/home/tony/arkc/testfiles/client1.pub", <sha1 of client1's private key>],
+        ["/home/tony/arkc/testfiles/client2.pub", <sha1 of client2's private key>]
+    ]
 }
 ```
 
@@ -45,8 +48,8 @@ For a full list of settings:
 | udp_port              | int, udp listening port  | (0.0.0.0:)9000       |
 | proxy_port            | int, local/ext proxy port| 8100(local)/8123(ext)|
 | tor_port              | int, tor socks port      | 0 (Unused)           |
-| local_cert_path       | str, path of client pub  | REQUIRED             |
-| remote_cert_path      | str, path of server pri  | REQUIRED             |
+| local_cert_path       | str, path of server pri  | REQUIRED             |
+| clients               | list, (path of client pub, sha1 of client pri) pairs  | REQUIRED             |
 
 ##Acknowledgements
 
