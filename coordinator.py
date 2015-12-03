@@ -55,7 +55,7 @@ class Coordinator(DatagramProtocol):
         else:
             self.tor_point = None
 
-    def decrypt_udp_msg(self, msg1, msg2, msg3, msg4, msg5):
+    def decrypt_udp_msg(self, *msg):
         """Return (main_pw, client_sha1, number).
 
             The encrypted message should be
@@ -68,22 +68,22 @@ class Coordinator(DatagramProtocol):
             salt
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
-        assert len(msg1) == 46
+        assert len(msg[0]) == 46
 
-        if msg5 in self.recentsalt:
+        if msg[4] in self.recentsalt:
             return (None, None, None, None, None)
 
-        number_hex, port_hex, client_sha1 = msg1[:2], msg1[2:6], msg1[6:46]
-        remote_ip = str(ipaddress.ip_address(int(msg4)))
+        number_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
+        remote_ip = str(ipaddress.ip_address(int(msg[3])))
         h = hashlib.sha256()
-        h.update(self.certs[client_sha1][1] + msg4 + msg5)
-        assert msg2 == pyotp.TOTP(h.hexdigest()).now()
-        main_pw = binascii.unhexlify(msg3)
+        h.update(self.certs[client_sha1][1] + msg[3] + msg[4])
+        assert msg[1] == pyotp.TOTP(h.hexdigest()).now()
+        main_pw = binascii.unhexlify(msg[2])
         number = int(number_hex, 16)
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
-        self.recentsalt.append(msg5)
+        self.recentsalt.append(msg[4])
         return main_pw, client_sha1, number, remote_port, remote_ip
 
     def datagramReceived(self, data, addr):
@@ -108,7 +108,8 @@ class Coordinator(DatagramProtocol):
             if len(query_data) < 7:
                 raise CorruptedReq
 
-            main_pw, client_sha1, number, tcp_port, remote_ip = self.decrypt_udp_msg(query_data[0], query_data[1], query_data[2], query_data[3], query_data[4])
+            main_pw, client_sha1, number, tcp_port, remote_ip = \
+                self.decrypt_udp_msg(*query_data[:5])
             if client_sha1 == None:
                 raise Duplicateerror
             if client_sha1 not in self.creators:
