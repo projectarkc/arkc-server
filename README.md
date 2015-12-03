@@ -45,7 +45,7 @@ For a full list of settings:
 
 | Index name            | Value Type & Description | Required / Default   |
 | ----------------------|:------------------------:| --------------------:|
-| udp_port              | int, udp listening port  | (0.0.0.0:)9000       |
+| udp_port              | int, udp listening port  | (0.0.0.0:)53       |
 | proxy_port            | int, local/ext proxy port| 8100(local)/8123(ext)|
 | tor_port              | int, tor socks port      | 0 (Unused)           |
 | local_cert_path       | str, path of server pri  | REQUIRED             |
