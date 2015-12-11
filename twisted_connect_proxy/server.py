@@ -26,7 +26,8 @@ class ConnectProxyRequest(ProxyRequest):
         self.setResponseCode(501, message)
         self.responseHeaders.addRawHeader("Content-Type", "text/html")
         self.write(body)
-        self.finish()
+        if not self._disconnected:
+            self.finish()
 
     def splitHostPort(self, hostport, default_port):
         port = default_port
@@ -53,6 +54,10 @@ class ConnectProxyRequest(ProxyRequest):
 
         # TODO provide an API to set proxy connect timeouts
         self.reactor.connectTCP(host, port, clientFactory)
+
+    def connectionLost(self, reason):
+        self._finished = True
+        ProxyRequest.connectionLost(self, reason)
 
 
 class ConnectProxy(Proxy):
@@ -89,7 +94,8 @@ class ConnectProxyClient(Protocol):
         self.factory.request.setHeader('X-Connected-IP',
                                        self.transport.realAddress[0])
         self.factory.request.setHeader('Content-Length', '0')
-        self.factory.request.finish()
+        if not self.factory.request._disconnected:
+            self.factory.request.finish()
 
     def connectionLost(self, reason):
         if self.connectedClient is not None:
