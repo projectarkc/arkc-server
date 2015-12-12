@@ -46,7 +46,7 @@ class Control:
         # maps ID to decrypted data segments
         self.proxy_write_queues = dict()
         self.proxy_write_queues_index = dict()
-        
+
         self.client_write_queues_index = dict()
 
         # maps ID to ProxyConnectors
@@ -134,6 +134,7 @@ class Control:
         try:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
             assert self.proxy_connectors.pop(conn_id, None) is not None
+            assert self.client_write_queues_index.pop(conn_id, None) is not None
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
 
@@ -168,7 +169,7 @@ class Control:
 
         Triggered by proxy_recv or proxy_finish.
         """
-        
+
         i = 0
         while i <= 5 and len(self.client_connectors) == 0:
             time.sleep(0.02)
@@ -208,7 +209,7 @@ class Control:
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
-        
+
         while conn_id in self.proxy_write_queues and self.proxy_write_queues_index[conn_id] in self.proxy_write_queues[conn_id]:
             data = self.proxy_write_queues[conn_id].pop(self.proxy_write_queues_index[conn_id])
             self.next_write_index(conn_id)
