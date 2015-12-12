@@ -6,6 +6,7 @@ import json
 from Crypto.PublicKey import RSA
 from hashlib import sha1
 from twisted.internet import reactor
+from twisted.internet.error import CannotListenError
 from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
 
@@ -117,17 +118,23 @@ if __name__ == "__main__":
 
     if "udp_port" not in data:
         data["udp_port"] = 53
-        # #TODO: add proper notice for administrator privillege
 
     # Start the loop
-    reactor.listenUDP(
-        data["udp_port"],
-        Coordinator(
-            data["proxy_port"],
-            data["tor_port"],
-            local_cert,
-            certs
-            )
-    )
+    try:
+        reactor.listenUDP(
+            data["udp_port"],
+            Coordinator(
+                data["proxy_port"],
+                data["tor_port"],
+                local_cert,
+                certs
+                )
+        )
+    except CannotListenError as err:
+        print(err.socketError)
+        if data["udp_port"] <= 1024 and \
+            str(err.socketError) == "[Errno 13] Permission denied":
+            print("root privilege may be required to listen to low ports")
+        exit()
 
     reactor.run()
