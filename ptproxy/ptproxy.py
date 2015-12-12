@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
@@ -13,7 +13,7 @@ import socks
 
 LOCK=None
 logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
-DEVNULL = open(os.devnull, 'wb')        
+DEVNULL = open(os.devnull, 'wb')
 TRANSPORT_VERSIONS = ('1',)
 startupinfo = None
 CFG={}
@@ -136,8 +136,8 @@ def checkproc():
     return PT_PROC
 
 
-def parseptline(iterable):
-    for ln in iterable:
+def parseptline(stdout):
+    for ln in iter(stdout.readline, ''):
         ln = ln.decode('utf_8', errors='replace').rstrip('\n')
         sp = ln.split(' ', 1)
         kw = sp[0]
