@@ -23,7 +23,7 @@ class CorruptedReq(Exception):
 
 class Coordinator(DatagramProtocol):
 
-    """Dispatch UDP requests to ClientConnectorCreators.
+    """Dispatch UDP requests to Controls.
 
     The local http proxy port, Tor port, the server's private key,
     and a dict of trusted clients' public keys must be given.
@@ -42,8 +42,8 @@ class Coordinator(DatagramProtocol):
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
 
-        # dict mapping client sha-1 to creator
-        self.creators = dict()
+        # dict mapping client sha-1 to control
+        self.controls = dict()
 
         self.recentsalt = []
 
@@ -89,7 +89,7 @@ class Coordinator(DatagramProtocol):
     def datagramReceived(self, data, addr):
         """Event handler of receiving a UDP request.
 
-        Verify the identity of the client and assign a ClientConnectorCreator
+        Verify the identity of the client and assign a Control
         to it if it is trusted.
         """
 
@@ -102,7 +102,7 @@ class Coordinator(DatagramProtocol):
             logging.info("Corrupted request")
         query_data = str(dnsq.q.qname).split('.')
         try:
-            # One creator corresponds to one client (with a unique SHA1)
+            # One control corresponds to one client (with a unique SHA1)
             # TODO: Use ip addr to support multiple conns
 
             if len(query_data) < 7:
@@ -112,20 +112,20 @@ class Coordinator(DatagramProtocol):
                 self.decrypt_udp_msg(*query_data[:5])
             if client_sha1 == None:
                 raise Duplicateerror
-            if client_sha1 not in self.creators:
+            if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
-                creator = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
+                control = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
                                   main_pw, number)
-                self.creators[client_sha1] = creator
+                self.controls[client_sha1] = control
             else:
-                creator = self.creators[client_sha1]
-                if main_pw != creator.main_pw:
-                    creator.main_pw = main_pw
+                control = self.controls[client_sha1]
+                if main_pw != control.main_pw:
+                    control.main_pw = main_pw
                     logging.warning("main password changed")
-                if remote_ip != creator.host or tcp_port != creator.port:
+                if remote_ip != control.host or tcp_port != control.port:
                     raise ClientAddrChanged
 
-            creator.connect()
+            control.connect()
 
         except CorruptedReq:
             logging.info("Corrupted request")
