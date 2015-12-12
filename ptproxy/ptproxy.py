@@ -2,52 +2,49 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import time
-import json
 import shlex
 import select
 import threading
 import subprocess
 
 import SocketServer
-import ptproxy.socks as socks
+import socks
 
+LOCK=None
 logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
-
 DEVNULL = open(os.devnull, 'wb')        
 TRANSPORT_VERSIONS = ('1',)
 startupinfo = None
-CFG = None
+CFG={}
+PT_PROC=None
+PTREADY=None
 
-def ptproxy(inputlist):
-    CFG=inputlist
+def ptproxy(certs, localport, remoteaddress, remoteport, init_lock, proxystr="", ptexec="obfs4proxy -logLevel=ERROR -enableLogging=true", iat=0):
+    global CFG
+    global PT_PROC
+    global PTREADY
+    global LOCK
+    LOCK=init_lock
+    PTREADY=threading.Event()
+    CFG = {
+           "role": "client",
+           "state": "/tmp/ptclient/",
+           "local": "127.0.0.1:" + str(localport),
+           # "server": "127.0.0.1:55000",
+           # "ptexec": "obfs4proxy -logLevel=ERROR -enableLogging=true",
+           "ptname": "obfs4",
+           # "ptargs": "cert=MtSkCiELS+DujrRtXZPeGvP56OaFHH2hJbmctfIYusRcun4dbI1ONoUt4g5CgEnei1u5Iw;iat-mode=0",
+           "ptserveropt": ""
+           # "ptproxy": ""
+    }
+    CFG["server"] = remoteaddress + ":" + str(remoteport)
+    CFG["ptargs"] = "cert=" + certs + ";iat-mode=" + str(iat)
+    CFG["ptproxy"] = proxystr
+    CFG["ptexec"] = ptexec
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    
-    try:
-        if len(sys.argv) == 1:
-            pass
-        elif len(sys.argv) == 2:
-            if sys.argv[1] in ('-h', '--help'):
-                print('usage: python3 %s [-c|-s] [config.json]' % __file__)
-                sys.exit(0)
-            else:
-                CFG = json.load(open(sys.argv[1], 'r'))
-        elif len(sys.argv) == 3:
-            CFG = json.load(open(sys.argv[2], 'r'))
-            if sys.argv[1] == '-c':
-                CFG['role'] = 'client'
-        elif sys.argv[1] == '-s':
-            CFG['role'] = 'server'
-    except Exception as ex:
-        print(ex)
-        print('usage: python3 %s [-c|-s] [config.json]' % sys.argv[0])
-        sys.exit(1)
-
-    PT_PROC = None
-    PTREADY = threading.Event()
 
     try:
         CFG['_run'] = True
@@ -71,10 +68,8 @@ def ptproxy(inputlist):
 class PTConnectFailed(Exception):
     pass
 
-
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
-
 
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
@@ -110,6 +105,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
 
 def ptenv():
+
     env = os.environ.copy()
     env['TOR_PT_STATE_LOCATION'] = CFG['state']
     env['TOR_PT_MANAGED_TRANSPORT_VER'] = ','.join(TRANSPORT_VERSIONS)
@@ -135,17 +131,17 @@ def checkproc():
     global PT_PROC
     if PT_PROC is None or PT_PROC.poll() is not None:
         PT_PROC = subprocess.Popen(shlex.split(
-            CFG['ptexec']), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            CFG['ptexec']), bufsize=-1, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=DEVNULL, env=ptenv(), startupinfo=startupinfo)
     return PT_PROC
 
 
 def parseptline(iterable):
-    global CFG
     for ln in iterable:
         ln = ln.decode('utf_8', errors='replace').rstrip('\n')
         sp = ln.split(' ', 1)
         kw = sp[0]
+        print(repr(kw))
         if kw in ('ENV-ERROR', 'VERSION-ERROR', 'PROXY-ERROR',
                   'CMETHOD-ERROR', 'SMETHOD-ERROR'):
             raise PTConnectFailed(ln)
@@ -174,6 +170,7 @@ def parseptline(iterable):
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
+            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info
@@ -194,7 +191,9 @@ def runpt():
             out = proc.stdout.readline()
             while out:
                 print(logtime(), out.decode('utf_8', errors='replace').rstrip('\n'))
-        except Exception:#original = BrokenPipeError
+        except Exception:  # original = BrokenPipeError
             pass
+        print(repr(PTREADY))
         PTREADY.clear()
+        # TODO: need to make sure PTREADY is waiting when the entire program is closing
         print(logtime(), 'PT died.')

@@ -12,6 +12,8 @@ from twisted_connect_proxy.server import ConnectProxy
 
 from coordinator import Coordinator
 
+DEFAULT_PTPROXY_LOCAL=56000
+
 def start_proxy(port):
     """Start the internal HTTP proxy server.
 
@@ -36,34 +38,10 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--config', dest="config", default='config.json',
                         help="You must specify a configuration files. By default ./config.json is used.")
 
-    # UDP activation messages are sent to this port to request the server to
-    # initiate connections to a client
-    # parser.add_argument("-up", "--udp-port", default=9000, type=int,
-    #                    help="udp request listener port, 9000 by default")
-
     parser.add_argument('-ep', "--use-external-proxy", action="store_true",
                         help="use an external HTTPS proxy server running locally,\
                         e.g. polipo, for better performance.\
                         Fall back to in-built python proxy server otherwise.")
-    #
-    # Specify the port if an external proxy is used,
-    # otherwise a proxy listening to this port will be created
-    # parser.add_argument("-pp", "--proxy-port", default=8100, type=int,
-    #                    help="local http proxy port, 8100 by default")
-
-    # The server will connect the client behind Tor if this parameter
-    # is specified
-    # parser.add_argument("-tp", "--tor-port", default=None, type=int,
-    #                    help="Tor port (9050), None to run without Tor")
-
-    # The public and private keys
-    # The public keys of trusted clients are pre-stored in server currently
-    # parser.add_argument("-rc", "--remote-cert", type=str, required=True,
-    #                    help="client public key (REQUIRED)",
-    #                    dest="remote_cert_path")
-    # parser.add_argument("-lc", "--local-cert", type=str, required=True,
-    #                    help="server private key (REQUIRED)",
-    #                    dest="local_cert_path")
 
     args = parser.parse_args()
 
@@ -112,10 +90,7 @@ if __name__ == "__main__":
     else:
         if "proxy_port" not in data:
             data["proxy_port"] = 8123
-
-    if "tor_port" not in data:
-        data["tor_port"] = None
-
+            
     if "udp_port" not in data:
         data["udp_port"] = 53
 
@@ -125,7 +100,7 @@ if __name__ == "__main__":
             data["udp_port"],
             Coordinator(
                 data["proxy_port"],
-                data["tor_port"],
+                DEFAULT_PTPROXY_LOCAL,
                 local_cert,
                 certs
                 )
