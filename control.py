@@ -6,6 +6,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 import time
 import threading
 import random
+import os
 
 from proxy import ProxyConnector
 from utils import addr_to_str
@@ -67,10 +68,15 @@ class Control:
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
         self.check = threading.Event()
         pt.start()
-        self.check.wait()
         
     def ptinit(self):
-        ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
+        #ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
+        with open("/home/tony/arkc/arkc-server/ptserver.py") as f:
+            code = compile(f.read(), "ptserver.py", 'exec')
+            globals={"SERVER_string":self.host + ":" + str(self.port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true",
+                     "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
+                     "certs":"nSf5ruEWSCCO4WxIPd4bWo2wejMqNAEe0kSgmj3cAoZdWb0uJVyAUg8RZOKZY3VhIIp2Lg"}
+            exec(code, globals)
 
     def connect(self):
         """Connect client."""
