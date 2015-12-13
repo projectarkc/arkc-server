@@ -200,6 +200,7 @@ class Control:
         i = 0
         while i <= 5 and len(self.client_connectors) == 0:
             time.sleep(0.02)
+            i += 1
         assert len(self.client_connectors) != 0
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
