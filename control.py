@@ -11,7 +11,6 @@ import os
 from proxy import ProxyConnector
 from utils import addr_to_str
 from client import ClientConnector
-import ptproxy.ptproxy
 
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
@@ -70,10 +69,10 @@ class Control:
         pt.start()
         
     def ptinit(self):
-        #ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
-        with open("/home/tony/arkc/arkc-server/ptserver.py") as f:
+        # ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
+        with open(os.getcwd() + os.sep + "ptserver.py") as f:
             code = compile(f.read(), "ptserver.py", 'exec')
-            globals={"SERVER_string":self.host + ":" + str(self.port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true",
+            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true",
                      "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
                      "certs":"nSf5ruEWSCCO4WxIPd4bWo2wejMqNAEe0kSgmj3cAoZdWb0uJVyAUg8RZOKZY3VhIIp2Lg"}
             exec(code, globals)

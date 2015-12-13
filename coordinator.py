@@ -39,7 +39,7 @@ class Coordinator(DatagramProtocol):
         self.tor_port = tor_port
         self.pri = pri
         
-        self.usedports=[]
+        self.usedports = []
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
@@ -95,21 +95,21 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
 
-        #Give a NXDOMAIN response
+        # Give a NXDOMAIN response
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         
-        ip="114.114.114.114" #TODO: Use a random reply
+        ip = "114.114.114.114"  # TODO: Use a random reply
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
-        packet=''
-        packet+=data[:2] + "\x81\x80"
-        packet+=data[4:6] + data[4:6] + '\x00\x00\x00\x00'   # Questions and Answers Counts
-        packet+=data[12:]                                         # Original Domain Name Question
-        packet+='\xc0\x0c'                                             # Pointer to domain name
-        packet+='\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'             # Response type, ttl and resource data length -> 4 bytes
-        packet+=str.join('',map(lambda x: chr(int(x)), ip.split('.'))) # 4bytes of IP
-        ##TODO: Teba, please send packet to addr
+        packet = ''
+        packet += data[:2] + "\x81\x80"
+        packet += data[4:6] + data[4:6] + '\x00\x00\x00\x00'  # Questions and Answers Counts
+        packet += data[12:]  # Original Domain Name Question
+        packet += '\xc0\x0c'  # Pointer to domain name
+        packet += '\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'  # Response type, ttl and resource data length -> 4 bytes
+        packet += str.join('', map(lambda x: chr(int(x)), ip.split('.')))  # 4bytes of IP
+        # #TODO: Teba, please send packet to addr
         
         try:
             dnsq = dnslib.DNSRecord.parse(data)
@@ -145,7 +145,7 @@ class Coordinator(DatagramProtocol):
         except CorruptedReq:
             logging.info("Corrupted request")
         except Duplicateerror:
-            pass  #TODO:should mimic DNS server
+            pass  # TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
