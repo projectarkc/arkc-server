@@ -56,6 +56,19 @@ class Control:
         host, port = "127.0.0.1", self.initiator.proxy_port
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
+    def update(self, host, port, main_pw, req_num):
+        if self.host != host:
+            self.host = host
+            logging.info("host address change")
+        if self.port != port:
+            self.port = port
+            logging.info("port to connect change")
+        if self.main_pw != main_pw:
+            self.main_pw = main_pw
+            logging.info("main password change")
+        if self.host != host:
+            self.req_num = req_num
+    
     def connect(self):
         """Connect client."""
         if self.number < self.req_num:

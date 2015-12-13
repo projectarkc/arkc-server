@@ -132,11 +132,7 @@ class Coordinator(DatagramProtocol):
                 self.controls[client_sha1] = control
             else:
                 control = self.controls[client_sha1]
-                if main_pw != control.main_pw:
-                    control.main_pw = main_pw
-                    logging.warning("main password changed")
-                if remote_ip != control.host or tcp_port != control.port:
-                    raise ClientAddrChanged
+                control.update(remote_ip, tcp_port,main_pw, number)
 
             control.connect()
 
