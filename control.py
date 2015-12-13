@@ -2,16 +2,15 @@ import logging
 from random import expovariate, choice
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
-from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
+# from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 import time
 import threading
+import random
 
 from proxy import ProxyConnector
 from utils import addr_to_str
 from client import ClientConnector
 import ptproxy.ptproxy
-
-DEFAULT_PTPROXY_LOCAL=56000
 
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
@@ -32,7 +31,7 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num):
+    def __init__(self, initiator, client_pub, client_pri_sha1, certs, host, port, main_pw, req_num):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
@@ -40,12 +39,17 @@ class Control:
         self.client_pri_sha1 = client_pri_sha1
         self.host = host
         self.port = port
+        self.certs = certs
         self.main_pw = main_pw
         self.req_num = req_num
         self.number = 0
         self.max_retry = 5
         self.retry_count = 0
         self.client_connectors = []
+        self.ptproxy_local_port = random.randint(30000, 40000)
+        while(self.ptproxy_local_port in initiator.usedports):
+            self.ptproxy_local_port += 1
+        initiator.usedports.append(self.ptproxy_local_port)
         pt = threading.Thread(target=self.ptinit)
         pt.setDaemon(True)
 
@@ -66,7 +70,7 @@ class Control:
         self.check.wait()
         
     def ptinit(self):
-        ptproxy.ptproxy.ptproxy("CIMaTQ7ds7Ql6PO2jF8nRHcimzPwLowkKlS6P6CQLvC/dx2Eo/z+yJ52YU9eezSPxELePw", DEFAULT_PTPROXY_LOCAL, self.host, self.port, self.check)  # TODO: solve the previous string
+        ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
 
     def connect(self):
         """Connect client."""
@@ -80,10 +84,10 @@ class Control:
             connector = ClientConnector(self)
 
             # connect through Tor if required, direct connection otherwise
-            if self.tor_point:
-                point = SOCKS5Point(self.host, self.port, self.tor_point)
-            else:
-                point = TCP4ClientEndpoint(reactor, self.host, self.port)
+            # if self.tor_point:
+            #    point = SOCKS4Point(self.host, self.port, self.tor_point)
+            # else:
+            point = TCP4ClientEndpoint(reactor, "127.0.0.1", self.ptproxy_local_port)
 
             deferred = connectProtocol(point, connector)
             # trigger success or failure action depending on the result
@@ -100,7 +104,7 @@ class Control:
         
         self.number -= 1
         if self.retry_count < self.max_retry:
-            host, port = self.host, self.port
+            host, port = "127.0.0.1", self.ptproxy_local_port
             logging.warning("retry connection to %s:%d" % (host, port))
             self.retry_count += 1
             self.connect()

@@ -12,8 +12,6 @@ from twisted_connect_proxy.server import ConnectProxy
 
 from coordinator import Coordinator
 
-DEFAULT_PTPROXY_LOCAL=56000
-
 def start_proxy(port):
     """Start the internal HTTP proxy server.
 
@@ -64,7 +62,7 @@ if __name__ == "__main__":
             with open(client[0], "r") as f:
                 remote_cert_txt = f.read()
                 remote_cert = RSA.importKey(remote_cert_txt)
-                certs[sha1(remote_cert_txt).hexdigest()] = [remote_cert, client[1]]
+                certs[sha1(remote_cert_txt).hexdigest()] = [remote_cert, client[1], client[2]]
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
@@ -100,7 +98,7 @@ if __name__ == "__main__":
             data["udp_port"],
             Coordinator(
                 data["proxy_port"],
-                DEFAULT_PTPROXY_LOCAL,
+                None,
                 local_cert,
                 certs
                 )

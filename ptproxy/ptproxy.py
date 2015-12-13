@@ -42,6 +42,7 @@ def ptproxy(certs, localport, remoteaddress, remoteport, init_lock, proxystr="",
     CFG["ptargs"] = "cert=" + certs + ";iat-mode=" + str(iat)
     CFG["ptproxy"] = proxystr
     CFG["ptexec"] = ptexec
+    print CFG
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -141,7 +142,6 @@ def parseptline(stdout):
         ln = ln.decode('utf_8', errors='replace').rstrip('\n')
         sp = ln.split(' ', 1)
         kw = sp[0]
-        print(repr(kw))
         if kw in ('ENV-ERROR', 'VERSION-ERROR', 'PROXY-ERROR',
                   'CMETHOD-ERROR', 'SMETHOD-ERROR'):
             raise PTConnectFailed(ln)
@@ -193,7 +193,6 @@ def runpt():
                 print(logtime(), out.decode('utf_8', errors='replace').rstrip('\n'))
         except Exception:  # original = BrokenPipeError
             pass
-        print(repr(PTREADY))
         PTREADY.clear()
         # TODO: need to make sure PTREADY is waiting when the entire program is closing
         print(logtime(), 'PT died.')

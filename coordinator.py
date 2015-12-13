@@ -38,6 +38,8 @@ class Coordinator(DatagramProtocol):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
+        
+        self.usedports=[]
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
@@ -127,7 +129,7 @@ class Coordinator(DatagramProtocol):
                 raise Duplicateerror
             if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
-                control = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
+                control = Control(self, client_pub, self.certs[client_sha1][1], self.certs[client_sha1][2], remote_ip, tcp_port,
                                   main_pw, number)
                 self.controls[client_sha1] = control
             else:
