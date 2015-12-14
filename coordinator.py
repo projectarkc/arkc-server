@@ -3,6 +3,9 @@ import dnslib
 import hashlib
 import binascii
 import ipaddress
+import socket
+import struct
+import random
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -96,8 +99,8 @@ class Coordinator(DatagramProtocol):
         #Give a NXDOMAIN response
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
-        
-        ip="114.114.114.114" #TODO: Use a random reply
+        ip_int=random.randint(1,4294967295)
+        ip=socket.inet_ntoa(struct.pack("=I", ip_int))
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         packet=''
@@ -107,8 +110,7 @@ class Coordinator(DatagramProtocol):
         packet+='\xc0\x0c'                                             # Pointer to domain name
         packet+='\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'             # Response type, ttl and resource data length -> 4 bytes
         packet+=str.join('',map(lambda x: chr(int(x)), ip.split('.'))) # 4bytes of IP
-        ##TODO: Teba, please send packet to addr
-        
+        self.transport.write(packet, addr)
         try:
             dnsq = dnslib.DNSRecord.parse(data)
         except Exception as err:
