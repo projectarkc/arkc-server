@@ -108,7 +108,8 @@ class Coordinator(DatagramProtocol):
             #    packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1)).pack()
             answer=dnsq.reply()
             answer.header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
-            answer.add_auth(dnslib.RR(AUTHORITYDOMAIN,dnslib.QTYPE.NS,ttl=3600,rdata=dnslib.NS(NSANSWER)))
+            answer.add_auth(dnslib.RR(self.delegatedomain,dnslib.QTYPE.SOA,ttl=3600,
+                            rdata=dnslib.SOA(self.selfdomain, "webmaster." + self.selfdomain, (20150101,3600,3600,3600,3600))))
             answer.set_header_qa()
             packet=answer.pack()
             self.transport.write(packet, addr)
