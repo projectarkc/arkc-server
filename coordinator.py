@@ -12,8 +12,10 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from control import Control
 import pyotp
+from dnslib.dns import DNSRecord
 
 MAX_SALT_BUFFER = 255
+AUTHORITYDOMAIN = "testing.arkc.org."
 
 class ClientAddrChanged(Exception):
     pass
@@ -102,9 +104,15 @@ class Coordinator(DatagramProtocol):
         try:
             dnsq = dnslib.DNSRecord.parse(data)
             query_data = str(dnsq.q.qname).split('.')
-            packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, rcode=3, aa=1, qr=1)).pack()
+            #if query_data.q.qtype="SOA":
+            #    packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1)).pack()
+            answer=dnsq.reply()
+            answer.header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
+            answer.add_auth(dnslib.RR(AUTHORITYDOMAIN,dnslib.QTYPE.NS,ttl=60,rdata=dnslib.NS("freedom.arkc.org")))
+            answer.set_header_qa()
+            packet=answer.pack()
             self.transport.write(packet, addr)
-        except Exception as err:
+        except KeyError as err:
             logging.info("Corrupted request")
             
         try:
