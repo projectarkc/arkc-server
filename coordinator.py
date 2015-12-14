@@ -3,9 +3,9 @@ import dnslib
 import hashlib
 import binascii
 import ipaddress
-import socket
-import struct
-import random
+#import socket
+#import struct
+#import random
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -99,23 +99,14 @@ class Coordinator(DatagramProtocol):
         #Give a NXDOMAIN response
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
-        ip_int=random.randint(1,4294967295)
-        ip=socket.inet_ntoa(struct.pack("=I", ip_int))
-
-        logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
-        packet=''
-        packet+=data[:2] + "\x81\x80"
-        packet+=data[4:6] + data[4:6] + '\x00\x00\x00\x00'   # Questions and Answers Counts
-        packet+=data[12:]                                         # Original Domain Name Question
-        packet+='\xc0\x0c'                                             # Pointer to domain name
-        packet+='\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'             # Response type, ttl and resource data length -> 4 bytes
-        packet+=str.join('',map(lambda x: chr(int(x)), ip.split('.'))) # 4bytes of IP
-        self.transport.write(packet, addr)
         try:
             dnsq = dnslib.DNSRecord.parse(data)
+            query_data = str(dnsq.q.qname).split('.')
+            packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, rcode=3, aa=1, qr=1)).pack()
+            self.transport.write(packet, addr)
         except Exception as err:
             logging.info("Corrupted request")
-        query_data = str(dnsq.q.qname).split('.')
+            
         try:
             # One control corresponds to one client (with a unique SHA1)
             # TODO: Use ip addr to support multiple conns
