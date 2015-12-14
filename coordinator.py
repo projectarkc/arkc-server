@@ -12,10 +12,8 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from control import Control
 import pyotp
-from dnslib.dns import DNSRecord
 
 MAX_SALT_BUFFER = 255
-AUTHORITYDOMAIN = "testing.arkc.org."
 
 class ClientAddrChanged(Exception):
     pass
@@ -39,10 +37,12 @@ class Coordinator(DatagramProtocol):
     """
 
 
-    def __init__(self, proxy_port, tor_port, pri, certs):
+    def __init__(self, proxy_port, tor_port, pri, certs, delegatedomain, selfdomain):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
+        self.delegatedomain=delegatedomain
+        self.selfdomain=selfdomain
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
@@ -108,7 +108,7 @@ class Coordinator(DatagramProtocol):
             #    packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1)).pack()
             answer=dnsq.reply()
             answer.header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
-            answer.add_auth(dnslib.RR(AUTHORITYDOMAIN,dnslib.QTYPE.NS,ttl=60,rdata=dnslib.NS("freedom.arkc.org")))
+            answer.add_auth(dnslib.RR(AUTHORITYDOMAIN,dnslib.QTYPE.NS,ttl=3600,rdata=dnslib.NS(NSANSWER)))
             answer.set_header_qa()
             packet=answer.pack()
             self.transport.write(packet, addr)

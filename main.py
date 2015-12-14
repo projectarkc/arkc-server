@@ -118,6 +118,12 @@ if __name__ == "__main__":
 
     if "udp_port" not in data:
         data["udp_port"] = 53
+        
+    if "delegated_domain" not in data:
+        data["delegated_domain"]="testing.arkc.org"
+        
+    if "self_domain" not in data:
+        data["self_domain"]="freedom.arkc.org"
 
     # Start the loop
     try:
@@ -127,7 +133,9 @@ if __name__ == "__main__":
                 data["proxy_port"],
                 data["tor_port"],
                 local_cert,
-                certs
+                certs,
+                data["delegated_domain"],
+                data["self_domain"]
                 )
         )
     except CannotListenError as err:
