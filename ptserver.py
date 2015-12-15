@@ -5,6 +5,14 @@ import select
 import subprocess
 import SocketServer
 import threading
+import logging
+
+import atexit
+
+def exit_handler():
+    PT_PROC.kill()
+
+atexit.register(exit_handler)
 
 try:
     DEVNULL = subprocess.DEVNULL
@@ -174,35 +182,45 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
     
+    #def __init__(self, initiator):
+    #    self.initiator=initiator
+    
     def handle(self):
         ptsock = socksocket()
         ptsock.set_proxy(*CFG['_ptcli'])
         host, port = CFG['server'].rsplit(':', 1)
         try:
             ptsock.connect((host, int(port)))
+            run = 1
+            while run:
+                rl, wl, xl = select.select([self.request, ptsock], [], [], 300)
+                if not rl:
+                    break
+                run = 0
+                for s in rl:
+                    try:
+                        data = s.recv(1024)
+                    except Exception as ex:
+                        print(logtime(), ex)
+                        continue
+                    if data:
+                        run += 1
+                    else:
+                        continue
+                    if s is self.request:
+                        ptsock.sendall(data)
+                    elif s is ptsock:
+                        self.request.sendall(data)
         except GeneralProxyError as ex:
-            print(logtime(), ex)
-            print(logtime(), 'WARNING: Please check the config and the log of PT.')
-        run = 1
-        while run:
-            rl, wl, xl = select.select([self.request, ptsock], [], [], 300)
-            if not rl:
-                break
-            run = 0
-            for s in rl:
-                try:
-                    data = s.recv(1024)
-                except Exception as ex:
-                    print(logtime(), ex)
-                    continue
-                if data:
-                    run += 1
-                else:
-                    continue
-                if s is self.request:
-                    ptsock.sendall(data)
-                elif s is ptsock:
-                    self.request.sendall(data)
+            logging.warning(logtime() + 'Proxy Error. Please check the config and the log of PT.')
+            self.request.close()
+        except SOCKS4Error as ex:
+            #logging.info(logtime() + 'SOCKS4 Error in PTproxy.')
+            self.request.close()
+        except ProxyConnectionError as ex:
+            logging.info(logtime() + 'Connection failed.')
+            self.request.close()
+        
 
 class socksocket(_BaseSocket):
     
@@ -711,6 +729,7 @@ def parseptline(stdout):
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
+            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info
