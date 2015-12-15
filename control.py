@@ -32,7 +32,7 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, client_pri_sha1, certs, host, port, main_pw, req_num):
+    def __init__(self, initiator, client_pub, client_pri_sha1, certs, host, port, main_pw, req_num, certs_str):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
@@ -46,6 +46,7 @@ class Control:
         self.number = 0
         self.max_retry = 5
         self.retry_count = 0
+        self.certs_str = certs_str
         self.client_connectors = []
         self.ptproxy_local_port = random.randint(30000, 40000)
         while(self.ptproxy_local_port in initiator.usedports):
@@ -76,7 +77,7 @@ class Control:
             code = compile(f.read(), "ptserver.py", 'exec')
             globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true",
                      "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
-                     "certs":"U6jDkSkp+8YCRmeCyoe1ud21OiVarjVBpd7/g0VeFnsXT+tch3QrUcTlrNzXWcei3GfNUw", "LOCK":self.check}
+                     "certs":self.certs_str, "LOCK":self.check}
             exec(code, globals)
 
     def connect(self):
@@ -237,8 +238,8 @@ class Control:
             self.number -= 1  # #TODO: Whereelse is the number reduced?
         except ValueError as err:
             pass
-        #self.connect() 
-        #TODO: need to redesign the counting method, connection to a proxy will always success and then be lost when the actual client is down.
+        # self.connect() 
+        # TODO: need to redesign the counting method, connection to a proxy will always success and then be lost when the actual client is down.
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
