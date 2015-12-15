@@ -3,9 +3,7 @@ import dnslib
 import hashlib
 import binascii
 import ipaddress
-#import socket
-#import struct
-#import random
+import base64
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -43,6 +41,7 @@ class Coordinator(DatagramProtocol):
         self.pri = pri
         self.delegatedomain=delegatedomain
         self.selfdomain=selfdomain
+        self.usedports = []
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
@@ -69,9 +68,12 @@ class Coordinator(DatagramProtocol):
             sha1(cert_pub) ,
             pyotp.TOTP(time) , ## TODO: client identity must be checked
             main_pw,
-            ip_in_number_form,
+            ip_in_hex_form,
+            cert1,
+            cert2,
+            cert3,
             salt
-            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 50, 50, 40, 16
         """
         assert len(msg[0]) == 46
 
@@ -79,17 +81,20 @@ class Coordinator(DatagramProtocol):
             return (None, None, None, None, None)
 
         number_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
-        remote_ip = str(ipaddress.ip_address(int(msg[3])))
         h = hashlib.sha256()
-        h.update(self.certs[client_sha1][1] + msg[3] + msg[4])
+        h.update(self.certs[client_sha1][1] + msg[3] + msg[6])
         assert msg[1] == pyotp.TOTP(h.hexdigest()).now()
+        remote_ip = str(ipaddress.ip_address(int(msg[3], 16)))
         main_pw = binascii.unhexlify(msg[2])
         number = int(number_hex, 16)
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
-        self.recentsalt.append(msg[4])
-        return main_pw, client_sha1, number, remote_port, remote_ip
+        self.recentsalt.append(msg[6])
+        certs_original = msg[4] + msg[5]
+        certs_original = certs_original + '=' * ((160 - len(certs_original)) % 4)
+        certs_str = base64.b64decode(certs_original)
+        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
 
     def datagramReceived(self, data, addr):
         """Event handler of receiving a UDP request.
@@ -98,7 +103,7 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
 
-        #Give a NXDOMAIN response
+        # Give a NXDOMAIN response
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
@@ -120,17 +125,17 @@ class Coordinator(DatagramProtocol):
             # One control corresponds to one client (with a unique SHA1)
             # TODO: Use ip addr to support multiple conns
 
-            if len(query_data) < 7:
+            if len(query_data) < 9:
                 raise CorruptedReq
 
-            main_pw, client_sha1, number, tcp_port, remote_ip = \
-                self.decrypt_udp_msg(*query_data[:5])
+            main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
+                self.decrypt_udp_msg(*query_data[:7])
             if client_sha1 == None:
                 raise Duplicateerror
             if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
-                control = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
-                                  main_pw, number)
+                control = Control(self, client_pub, self.certs[client_sha1][1], self.certs[client_sha1][2], remote_ip, tcp_port,
+                                  main_pw, number, certs_str)
                 self.controls[client_sha1] = control
             else:
                 control = self.controls[client_sha1]
@@ -141,7 +146,7 @@ class Coordinator(DatagramProtocol):
         except CorruptedReq:
             logging.info("Corrupted request")
         except Duplicateerror:
-            pass  #TODO:should mimic DNS server
+            pass  # TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:

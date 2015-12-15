@@ -2,8 +2,12 @@ import logging
 from random import expovariate, choice
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
-from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
+# from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 import time
+import threading
+import random
+import os
+import sys
 
 from proxy import ProxyConnector
 from utils import addr_to_str
@@ -28,7 +32,7 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num):
+    def __init__(self, initiator, client_pub, client_pri_sha1, certs, host, port, main_pw, req_num, certs_str):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
@@ -36,12 +40,20 @@ class Control:
         self.client_pri_sha1 = client_pri_sha1
         self.host = host
         self.port = port
+        self.certs = certs
         self.main_pw = main_pw
         self.req_num = req_num
         self.number = 0
         self.max_retry = 5
         self.retry_count = 0
+        self.certs_str = certs_str
         self.client_connectors = []
+        self.ptproxy_local_port = random.randint(30000, 40000)
+        while(self.ptproxy_local_port in initiator.usedports):
+            self.ptproxy_local_port += 1
+        initiator.usedports.append(self.ptproxy_local_port)
+        pt = threading.Thread(target=self.ptinit)
+        pt.setDaemon(True)
 
         # maps ID to decrypted data segments
         self.proxy_write_queues = dict()
@@ -55,6 +67,18 @@ class Control:
         # Create an endpoint for the HTTP proxy
         host, port = "127.0.0.1", self.initiator.proxy_port
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
+        self.check = threading.Event()
+        pt.start()
+        self.check.wait(1000)
+        
+    def ptinit(self):
+        # ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
+        with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptserver.py") as f:
+            code = compile(f.read(), "ptserver.py", 'exec')
+            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true",
+                     "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
+                     "certs":self.certs_str, "LOCK":self.check}
+            exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):
         if self.host != host:
@@ -71,6 +95,7 @@ class Control:
     
     def connect(self):
         """Connect client."""
+        
         if self.number < self.req_num:
 
             # pre-add the available connection count
@@ -80,10 +105,10 @@ class Control:
             connector = ClientConnector(self)
 
             # connect through Tor if required, direct connection otherwise
-            if self.tor_point:
-                point = SOCKS5Point(self.host, self.port, self.tor_point)
-            else:
-                point = TCP4ClientEndpoint(reactor, self.host, self.port)
+            # if self.tor_point:
+            #    point = SOCKS4Point(self.host, self.port, self.tor_point)
+            # else:
+            point = TCP4ClientEndpoint(reactor, "127.0.0.1", self.ptproxy_local_port)
 
             deferred = connectProtocol(point, connector)
             # trigger success or failure action depending on the result
@@ -97,9 +122,10 @@ class Control:
         (which is pre-added when trying to connect),
         and retry until the max retry count is reached.
         """
+        
         self.number -= 1
         if self.retry_count < self.max_retry:
-            host, port = self.host, self.port
+            host, port = "127.0.0.1", self.ptproxy_local_port
             logging.warning("retry connection to %s:%d" % (host, port))
             self.retry_count += 1
             self.connect()
@@ -111,6 +137,7 @@ class Control:
         available connection number (specified by client through UDP message)
         is reached.
         """
+        
         self.retry_count = 0
         self.client_connectors.append(conn)
 
@@ -125,6 +152,7 @@ class Control:
 
         Return a Deferred object of the proxy connector.
         """
+        
         logging.info("adding connection id " + conn_id)
         try:
             assert conn_id not in self.proxy_write_queues
@@ -143,6 +171,7 @@ class Control:
 
         Triggered when the ID is no longer in use.
         """
+        
         logging.info("deleting connection id " + conn_id)
         try:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
@@ -156,6 +185,7 @@ class Control:
 
         Should be decrypted by ClientConnector first.
         """
+        
         conn_id, index, data = recv[:2], int(recv[2:5]), recv[5:]
 
         if data == self.close_char:
@@ -182,7 +212,7 @@ class Control:
 
         Triggered by proxy_recv or proxy_finish.
         """
-
+        
         i = 0
         while i <= 5 and len(self.client_connectors) == 0:
             time.sleep(0.02)
@@ -204,6 +234,7 @@ class Control:
 
         May result in better performance.
         """
+        
         # conn.transport.loseConnection()
         self.client_lost(conn)
         conn.write(self.close_char, "00", 100)
@@ -214,15 +245,18 @@ class Control:
 
         Remove the closed connection and retry creating it.
         """
+        
         try:
             self.client_connectors.remove(conn)
             self.number -= 1  # #TODO: Whereelse is the number reduced?
         except ValueError as err:
             pass
-        self.connect()
+        # self.connect() 
+        # TODO: need to redesign the counting method, connection to a proxy will always success and then be lost when the actual client is down.
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
+        
 
         while conn_id in self.proxy_write_queues and self.proxy_write_queues_index[conn_id] in self.proxy_write_queues[conn_id]:
             data = self.proxy_write_queues[conn_id].pop(self.proxy_write_queues_index[conn_id])
@@ -240,6 +274,7 @@ class Control:
 
     def proxy_recv(self, data, conn_id):
         """Call client_write on receiving data from proxy."""
+        
         try:
             self.client_write(data, conn_id)
         except AssertionError as err:
@@ -252,6 +287,7 @@ class Control:
 
         That is when conn.transport becomes None.
         """
+        
         # TODO: why does this happen?
         conn = self.proxy_connectors[conn_id]
         conn.dead = True
@@ -264,11 +300,13 @@ class Control:
 
         Called when proxy connection is lost.
         """
+        
         if len(self.client_connectors) != 0:
             self.client_write(self.close_char, conn_id)
         self.del_proxy_conn(conn_id)
 
     def next_write_index(self, conn_id):
+        
         self.proxy_write_queues_index[conn_id] += 1
         if self.proxy_write_queues_index[conn_id] == 1000:
             self.proxy_write_queues_index[conn_id] = 100
