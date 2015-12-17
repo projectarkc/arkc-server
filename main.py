@@ -93,10 +93,13 @@ if __name__ == "__main__":
         data["udp_port"] = 53
         
     if "delegated_domain" not in data:
-        data["delegated_domain"]="testing.arkc.org"
+        data["delegated_domain"] = "testing.arkc.org"
         
     if "self_domain" not in data:
-        data["self_domain"]="freedom.arkc.org"
+        data["self_domain"] = "freedom.arkc.org"
+        
+    if "obfs4_exec" not in data:
+        data["obfs4_exec"] = "obfs4proxy"
 
     # Start the loop
     try:
@@ -108,7 +111,8 @@ if __name__ == "__main__":
                 local_cert,
                 certs,
                 data["delegated_domain"],
-                data["self_domain"]
+                data["self_domain"],
+                data["obfs4_exec"]
                 )
         )
     except CannotListenError as err:

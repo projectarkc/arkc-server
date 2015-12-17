@@ -7,13 +7,6 @@ import SocketServer
 import threading
 import logging
 
-import atexit
-
-def exit_handler():
-    PT_PROC.kill()
-
-atexit.register(exit_handler)
-
 try:
     DEVNULL = subprocess.DEVNULL
 except AttributeError:

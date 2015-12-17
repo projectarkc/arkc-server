@@ -13,6 +13,18 @@ from proxy import ProxyConnector
 from utils import addr_to_str
 from client import ClientConnector
 
+import atexit
+import psutil
+
+def exit_handler():
+
+    for proc in psutil.process_iter():
+        # check whether the process name matches
+        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe": #TODO: figure out what's wrong with PT_PROC
+            proc.kill()
+
+atexit.register(exit_handler)
+
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
 
@@ -75,7 +87,7 @@ class Control:
         # ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
         with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptserver.py") as f:
             code = compile(f.read(), "ptserver.py", 'exec')
-            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true",
+            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":self.initiator.pt_exec + " -logLevel=ERROR -enableLogging=true",
                      "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
                      "certs":self.certs_str, "LOCK":self.check}
             exec(code, globals)

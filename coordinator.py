@@ -35,14 +35,14 @@ class Coordinator(DatagramProtocol):
     """
 
 
-    def __init__(self, proxy_port, tor_port, pri, certs, delegatedomain, selfdomain):
+    def __init__(self, proxy_port, tor_port, pri, certs, delegatedomain, selfdomain, pt_exec):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
-        self.delegatedomain=delegatedomain
-        self.selfdomain=selfdomain
+        self.delegatedomain = delegatedomain
+        self.selfdomain = selfdomain
         self.usedports = []
-
+        self.pt_exec = pt_exec
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
 
@@ -109,14 +109,14 @@ class Coordinator(DatagramProtocol):
         try:
             dnsq = dnslib.DNSRecord.parse(data)
             query_data = str(dnsq.q.qname).split('.')
-            #if query_data.q.qtype="SOA":
+            # if query_data.q.qtype="SOA":
             #    packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1)).pack()
-            answer=dnsq.reply()
-            answer.header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
-            answer.add_auth(dnslib.RR(self.delegatedomain,dnslib.QTYPE.SOA,ttl=3600,
-                            rdata=dnslib.SOA(self.selfdomain, "webmaster." + self.selfdomain, (20150101,3600,3600,3600,3600))))
+            answer = dnsq.reply()
+            answer.header = dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
+            answer.add_auth(dnslib.RR(self.delegatedomain, dnslib.QTYPE.SOA, ttl=3600,
+                            rdata=dnslib.SOA(self.selfdomain, "webmaster." + self.selfdomain, (20150101, 3600, 3600, 3600, 3600))))
             answer.set_header_qa()
-            packet=answer.pack()
+            packet = answer.pack()
             self.transport.write(packet, addr)
         except KeyError as err:
             logging.info("Corrupted request")
@@ -139,7 +139,7 @@ class Coordinator(DatagramProtocol):
                 self.controls[client_sha1] = control
             else:
                 control = self.controls[client_sha1]
-                control.update(remote_ip, tcp_port,main_pw, number)
+                control.update(remote_ip, tcp_port, main_pw, number)
 
             control.connect()
 
