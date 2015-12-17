@@ -10,7 +10,7 @@ from twisted.internet.error import CannotListenError
 from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
 
-from coordinator import Coordinator
+from coordinator import Coordinator, Coordinator_pt
 
 def start_proxy(port):
     """Start the internal HTTP proxy server.
@@ -40,6 +40,8 @@ if __name__ == "__main__":
                         help="use an external HTTPS proxy server running locally,\
                         e.g. polipo, for better performance.\
                         Fall back to in-built python proxy server otherwise.")
+    parser.add_argument("-pt", "--use-ptproxy", dest="pt", action="store_true",
+                        help="use ptproxy")
 
     args = parser.parse_args()
 
@@ -103,7 +105,21 @@ if __name__ == "__main__":
 
     # Start the loop
     try:
-        reactor.listenUDP(
+        if args.pt:
+            reactor.listenUDP(
+                data["udp_port"],
+                Coordinator_pt(
+                            data["proxy_port"],
+                            None,
+                            local_cert,
+                            certs,
+                            data["delegated_domain"],
+                            data["self_domain"],
+                            data["obfs4_exec"]
+                )
+            )
+        else:
+            reactor.listenUDP(
             data["udp_port"],
             Coordinator(
                 data["proxy_port"],
@@ -111,10 +127,9 @@ if __name__ == "__main__":
                 local_cert,
                 certs,
                 data["delegated_domain"],
-                data["self_domain"],
-                data["obfs4_exec"]
+                data["self_domain"]
                 )
-        )
+            )
     except CannotListenError as err:
         print(err.socketError)
         if data["udp_port"] <= 1024 and \
