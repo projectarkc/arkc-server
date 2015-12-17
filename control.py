@@ -293,7 +293,7 @@ class Control_pt:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, client_pri_sha1, certs, host, port, main_pw, req_num, certs_str):
+    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num, certs_str):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
@@ -301,7 +301,6 @@ class Control_pt:
         self.client_pri_sha1 = client_pri_sha1
         self.host = host
         self.port = port
-        self.certs = certs
         self.main_pw = main_pw
         self.req_num = req_num
         self.number = 0
@@ -357,9 +356,7 @@ class Control_pt:
     
     def connect(self):
         """Connect client."""
-        
         if self.number < self.req_num:
-
             # pre-add the available connection count
             # will be decremented if failure occurs
             self.number += 1
@@ -384,7 +381,6 @@ class Control_pt:
         (which is pre-added when trying to connect),
         and retry until the max retry count is reached.
         """
-        
         self.number -= 1
         if self.retry_count < self.max_retry:
             host, port = "127.0.0.1", self.ptproxy_local_port

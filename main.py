@@ -120,14 +120,14 @@ if __name__ == "__main__":
             )
         else:
             reactor.listenUDP(
-            data["udp_port"],
-            Coordinator(
-                data["proxy_port"],
-                None,
-                local_cert,
-                certs,
-                data["delegated_domain"],
-                data["self_domain"]
+                              data["udp_port"],
+                              Coordinator(
+                                          data["proxy_port"],
+                                          None,
+                                          local_cert,
+                                          certs,
+                                          data["delegated_domain"],
+                                          data["self_domain"]
                 )
             )
     except CannotListenError as err:

@@ -156,7 +156,6 @@ class Coordinator_pt(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-
     def __init__(self, proxy_port, tor_port, pri, certs, delegatedomain, selfdomain, pt_exec):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
@@ -226,7 +225,6 @@ class Coordinator_pt(DatagramProtocol):
         """
 
         # Give a NXDOMAIN response
-
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
             dnsq = dnslib.DNSRecord.parse(data)
@@ -256,7 +254,7 @@ class Coordinator_pt(DatagramProtocol):
                 raise Duplicateerror
             if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
-                control = Control_pt(self, client_pub, self.certs[client_sha1][1], self.certs[client_sha1][2], remote_ip, tcp_port,
+                control = Control_pt(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
                                   main_pw, number, certs_str)
                 self.controls[client_sha1] = control
             else:
@@ -268,7 +266,7 @@ class Coordinator_pt(DatagramProtocol):
         except CorruptedReq:
             logging.info("Corrupted request")
         except Duplicateerror:
-            pass  # TODO:should mimic DNS server
+            pass
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
