@@ -63,7 +63,7 @@ class ClientConnector(Protocol):
 
         Split, decrypt and hand them back to Control.
         """
-        logging.info("received %d bytes from client " % len(recv_data) + 
+        logging.debug("received %d bytes from client " % len(recv_data) + 
                      addr_to_str(self.transport.getPeer()))
         self.buffer += recv_data
 
@@ -104,7 +104,7 @@ class ClientConnector(Protocol):
         # TODO: should use buffer here and split to 4096 packages
 
         to_write = self.cipher.encrypt(conn_id + str(index) + data) + self.split_char
-        logging.info("sending %d bytes to client %s with id %s" % (len(data),
+        logging.debug("sending %d bytes to client %s with id %s" % (len(data),
                      addr_to_str(self.transport.getPeer()),
                      conn_id))
         self.transport.write(to_write)

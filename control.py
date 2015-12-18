@@ -235,7 +235,7 @@ class Control:
                 if not conn.transport:
                     self.proxy_lost(conn_id)
                 else:
-                    logging.info("sending %d bytes to proxy %s from id %s" % (
+                    logging.debug("sending %d bytes to proxy %s from id %s" % (
                                     len(data),
                                     addr_to_str(conn.transport.getPeer()),
                                     conn_id))
@@ -524,7 +524,7 @@ class Control_pt:
                 if not conn.transport:
                     self.proxy_lost(conn_id)
                 else:
-                    logging.info("sending %d bytes to proxy %s from id %s" % (
+                    logging.debug("sending %d bytes to proxy %s from id %s" % (
                                     len(data),
                                     addr_to_str(conn.transport.getPeer()),
                                     conn_id))

@@ -31,7 +31,7 @@ class ProxyConnector(Protocol):
         """Event handler of receiving data from HTTP proxy.
         Will cut them into segments and call self.respond() to write them.
         """
-        logging.info("received %d bytes from proxy with id %s" % 
+        logging.debug("received %d bytes from proxy with id %s" % 
                      (len(response), self.conn_id))
         self.buffer += response
         while len(self.buffer) >= self.segment_size:

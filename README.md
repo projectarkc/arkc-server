@@ -11,7 +11,7 @@ Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is currently not s
 For Debian or Ubuntu users:
 
 ```
-sudo apt-get install python-virtualenv python-dev
+sudo apt-get install python-virtualenv python-dev python-psutil obfs4proxy
 virtualenv ~/virtualenvs/arkc-server
 . ~/virtualenvs/arkc-server/bin/activate
 pip install -r requirements.txt
@@ -49,13 +49,19 @@ For a full list of settings:
 | proxy_port            | int, local/ext proxy port| 8100(local)/8123(ext)|
 | tor_port              | int, tor socks port      | 0 (Unused)           |
 | local_cert_path       | str, path of server pri  | REQUIRED             |
-| clients               | list, (path of client pub, sha1 of client pri) pairs  | REQUIRED             |
+| clients       | list, (path of client pub, sha1 of client pri) pairs  | REQUIRED             |
+| obfs4_exec		| str, command line of obfs4proxy executable | "obfs4proxy" |
+| obfs_level		| integer, obfs leve 0~3 | 0 |
+
+Note: if obfs_level is set to a non-zero value, obfs4_exec must be appropriate set. Obfs4 will use an IAT mode of (obfs_level - 1), which means if obfs_level is set to 2 or 3, the connection speed may be affected.
 
 ##Acknowledgements
 
 The http proxy part is based on [twisted-connect-proxy](https://github.com/fmoo/twisted-connect-proxy) by Peter Ruibal, released under BSD License.
 
 The server-end software adapted part of the pyotp library created by Mark Percival <m@mdp.im>. His code is reused under Python Port copyright, license attached.
+
+File ptclient.py is based on ptproxy by Dingyuan Wang. Code reused and edited under MIT license, attached in file.
 
 ##License
 

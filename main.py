@@ -33,6 +33,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start ArkC server.")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="show detailed logs")
+    parser.add_argument("-vv", action="store_true", dest="vv",
+                        help="show debug logs")
     parser.add_argument('-c', '--config', dest="config", default='config.json',
                         help="You must specify a configuration files. By default ./config.json is used.")
 
@@ -40,8 +42,6 @@ if __name__ == "__main__":
                         help="use an external HTTPS proxy server running locally,\
                         e.g. polipo, for better performance.\
                         Fall back to in-built python proxy server otherwise.")
-    parser.add_argument("-pt", "--use-ptproxy", dest="pt", action="store_true",
-                        help="use ptproxy")
 
     args = parser.parse_args()
 
@@ -82,6 +82,9 @@ if __name__ == "__main__":
 
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
+        
+    if args.vv:
+        logging.basicConfig(level=logging.DEBUG)
 
     if not args.use_external_proxy:
         if "proxy_port" not in data:
