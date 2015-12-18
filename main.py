@@ -102,10 +102,13 @@ if __name__ == "__main__":
         
     if "obfs4_exec" not in data:
         data["obfs4_exec"] = "obfs4proxy"
+        
+    if "obfs_level" not in data:
+        data["obfs_level"] = 0
 
     # Start the loop
     try:
-        if args.pt:
+        if data["obfs_level"] != 0:
             reactor.listenUDP(
                 data["udp_port"],
                 Coordinator_pt(
@@ -115,7 +118,8 @@ if __name__ == "__main__":
                             certs,
                             data["delegated_domain"],
                             data["self_domain"],
-                            data["obfs4_exec"]
+                            data["obfs4_exec"],
+                            data["obfs_level"]
                 )
             )
         else:

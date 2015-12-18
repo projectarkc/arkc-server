@@ -336,9 +336,9 @@ class Control_pt:
         atexit.register(exit_handler)
         with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptserver.py") as f:
             code = compile(f.read(), "ptserver.py", 'exec')
-            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":self.initiator.pt_exec + " -logLevel=ERROR -enableLogging=true",
+            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":self.initiator.pt_exec + " -logLevel=ERROR",
                      "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
-                     "certs":self.certs_str, "LOCK":self.check}
+                     "certs":self.certs_str, "LOCK":self.check, "IAT":self.initiator.obfs_level}
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):

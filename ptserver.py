@@ -6,6 +6,7 @@ import subprocess
 import SocketServer
 import threading
 import logging
+import tempfile
 
 try:
     DEVNULL = subprocess.DEVNULL
@@ -31,27 +32,18 @@ PRINTABLE_PROXY_TYPES = dict(zip(PROXY_TYPES.values(), PROXY_TYPES.keys()))
 
 _orgsocket = _orig_socket = socket.socket
 
-# Default config
-# If config file is not specified on the command line, this is used instead.
-
 CFG = {
         "role": "client",
-        "state": "/tmp/ptclient/",
+        "state": tempfile.gettempdir(),
          "local": "127.0.0.1:" + str(localport),
-           # "server": "127.0.0.1:55000",
-           # "ptexec": "obfs4proxy -logLevel=ERROR -enableLogging=true",
         "ptname": "obfs4",
-           # "ptargs": "cert=MtSkCiELS+DujrRtXZPeGvP56OaFHH2hJbmctfIYusRcun4dbI1ONoUt4g5CgEnei1u5Iw;iat-mode=0",
         "ptserveropt": ""
-           # "ptproxy": ""
     }
 
 CFG["server"] = remoteaddress + ":" + str(remoteport)
-CFG["ptargs"] = "cert=" + certs + ";iat-mode=0"
+CFG["ptargs"] = "cert=" + certs + ";iat-mode=" + str(IAT - 1)
 CFG["ptproxy"] = ""
 CFG["ptexec"] = ptexec
-
-# End
 
 TRANSPORT_VERSIONS = ('1',)
 

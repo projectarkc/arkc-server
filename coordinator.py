@@ -36,8 +36,8 @@ class Coordinator(DatagramProtocol):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
-        self.delegatedomain=delegatedomain
-        self.selfdomain=selfdomain
+        self.delegatedomain = delegatedomain
+        self.selfdomain = selfdomain
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
@@ -91,20 +91,20 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
 
-        #Give a NXDOMAIN response
+        # Give a NXDOMAIN response
 
         logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
             dnsq = dnslib.DNSRecord.parse(data)
             query_data = str(dnsq.q.qname).split('.')
-            #if query_data.q.qtype="SOA":
+            # if query_data.q.qtype="SOA":
             #    packet=dnslib.DNSRecord(header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1)).pack()
-            answer=dnsq.reply()
-            answer.header=dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
-            answer.add_auth(dnslib.RR(self.delegatedomain,dnslib.QTYPE.SOA,ttl=3600,
-                            rdata=dnslib.SOA(self.selfdomain, "webmaster." + self.selfdomain, (20150101,3600,3600,3600,3600))))
+            answer = dnsq.reply()
+            answer.header = dnslib.DNSHeader(id=dnsq.header.id, aa=1, qr=1, ra=1, rcode=3)
+            answer.add_auth(dnslib.RR(self.delegatedomain, dnslib.QTYPE.SOA, ttl=3600,
+                            rdata=dnslib.SOA(self.selfdomain, "webmaster." + self.selfdomain, (20150101, 3600, 3600, 3600, 3600))))
             answer.set_header_qa()
-            packet=answer.pack()
+            packet = answer.pack()
             self.transport.write(packet, addr)
         except KeyError as err:
             logging.info("Corrupted request")
@@ -127,14 +127,14 @@ class Coordinator(DatagramProtocol):
                 self.controls[client_sha1] = control
             else:
                 control = self.controls[client_sha1]
-                control.update(remote_ip, tcp_port,main_pw, number)
+                control.update(remote_ip, tcp_port, main_pw, number)
 
             control.connect()
 
         except CorruptedReq:
             logging.info("Corrupted request")
         except Duplicateerror:
-            pass  #TODO:should mimic DNS server
+            pass  # TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:
@@ -156,7 +156,7 @@ class Coordinator_pt(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-    def __init__(self, proxy_port, tor_port, pri, certs, delegatedomain, selfdomain, pt_exec):
+    def __init__(self, proxy_port, tor_port, pri, certs, delegatedomain, selfdomain, pt_exec, obfs_level):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
@@ -166,7 +166,7 @@ class Coordinator_pt(DatagramProtocol):
         self.pt_exec = pt_exec
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
-
+        self.obfs_level = obfs_level
         # dict mapping client sha-1 to control
         self.controls = dict()
 
