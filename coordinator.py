@@ -16,7 +16,7 @@ MAX_SALT_BUFFER = 255
 class ClientAddrChanged(Exception):
     pass
 
-class Duplicateerror(Exception):
+class DuplicateError(Exception):
     pass
 
 class CorruptedReq(Exception):
@@ -119,7 +119,7 @@ class Coordinator(DatagramProtocol):
             main_pw, client_sha1, number, tcp_port, remote_ip = \
                 self.decrypt_udp_msg(*query_data[:5])
             if client_sha1 == None:
-                raise Duplicateerror
+                raise DuplicateError
             if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
                 control = Control(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
@@ -133,7 +133,7 @@ class Coordinator(DatagramProtocol):
 
         except CorruptedReq:
             logging.info("Corrupted request")
-        except Duplicateerror:
+        except DuplicateError:
             pass  # TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
@@ -251,7 +251,7 @@ class Coordinator_pt(DatagramProtocol):
             main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
                 self.decrypt_udp_msg(*query_data[:7])
             if client_sha1 == None:
-                raise Duplicateerror
+                raise DuplicateError
             if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
                 control = Control_pt(self, client_pub, self.certs[client_sha1][1], remote_ip, tcp_port,
@@ -265,7 +265,7 @@ class Coordinator_pt(DatagramProtocol):
 
         except CorruptedReq:
             logging.info("Corrupted request")
-        except Duplicateerror:
+        except DuplicateError:
             pass
         except KeyError:
             logging.error("untrusted client")
