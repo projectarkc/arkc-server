@@ -16,13 +16,15 @@ from client import ClientConnector
 import atexit
 import psutil
 
+
 def exit_handler():
 
     for proc in psutil.process_iter():
         # check whether the process name matches
         if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe": #TODO: figure out what's wrong with PT_PROC
             proc.kill()
-            
+
+
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
     One Control instance corresponds to one client (with unique SHA1).
@@ -39,7 +41,8 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num):
+    def __init__(self, initiator, client_pub, client_pri_sha1, host, port,
+                 main_pw, req_num, certs_str=None):
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
@@ -49,6 +52,7 @@ class Control:
         self.port = port
         self.main_pw = main_pw
         self.req_num = req_num
+        self.certs_str = certs_str
         self.number = 0
         self.max_retry = 5
         self.retry_count = 0
@@ -67,6 +71,37 @@ class Control:
         host, port = "127.0.0.1", self.initiator.proxy_port
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
+        # ptproxy enabled
+        if self.certs_str:
+            self.ptproxy_local_port = random.randint(30000, 40000)
+            while(self.ptproxy_local_port in initiator.usedports):
+                self.ptproxy_local_port += 1
+            initiator.usedports.append(self.ptproxy_local_port)
+            pt = threading.Thread(target=self.ptinit)
+            pt.setDaemon(True)
+            self.check = threading.Event()
+            pt.start()
+            self.check.wait(1000)
+
+    def ptinit(self):
+        atexit.register(exit_handler)
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "ptserver.py") as f:
+            code = compile(f.read(), "ptserver.py", 'exec')
+            globals = {
+                "SERVER_string": self.host + ":" + str(self.port),
+                "ptexec": self.initiator.pt_exec + " -logLevel=ERROR",
+                "localport": self.ptproxy_local_port,
+                "remoteaddress": self.host,
+                "remoteport": self.port,
+                "certs": self.certs_str,
+                "LOCK": self.check,
+                "IAT": self.initiator.obfs_level
+            }
+            self.host = "127.0.0.1"
+            self.port = self.ptproxy_local_port
+            exec(code, globals)
+
     def update(self, host, port, main_pw, req_num):
         if self.host != host:
             self.host = host
@@ -79,7 +114,7 @@ class Control:
             logging.info("main password change")
         if self.host != host:
             self.req_num = req_num
-    
+
     def connect(self):
         """Connect client."""
         if self.number < self.req_num:
@@ -222,7 +257,10 @@ class Control:
             self.number -= 1  # #TODO: Whereelse is the number reduced?
         except ValueError as err:
             pass
-        self.connect()
+
+        # TODO: need to redesign the counting method, connection to a proxy will always success and then be lost when the actual client is down.
+        if self.certs_str is None:
+            self.connect()
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
@@ -273,77 +311,4 @@ class Control:
         self.proxy_write_queues_index[conn_id] += 1
         if self.proxy_write_queues_index[conn_id] == 1000:
             self.proxy_write_queues_index[conn_id] = 100
-            
 
-class Control_pt(Control):
-
-    def __init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num, certs_str):
-        Control.__init__(self, initiator, client_pub, client_pri_sha1, host, port, main_pw, req_num)
-        self.certs_str = certs_str
-        self.ptproxy_local_port = random.randint(30000, 40000)
-        while(self.ptproxy_local_port in initiator.usedports):
-            self.ptproxy_local_port += 1
-        initiator.usedports.append(self.ptproxy_local_port)
-        pt = threading.Thread(target=self.ptinit)
-        pt.setDaemon(True)
-        self.check = threading.Event()
-        pt.start()
-        self.check.wait(1000)
-        
-    def ptinit(self):
-        # ptproxy.ptproxy.ptproxy(self.certs, self.ptproxy_local_port, self.host, self.port, self.check)
-        atexit.register(exit_handler)
-        with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptserver.py") as f:
-            code = compile(f.read(), "ptserver.py", 'exec')
-            globals = {"SERVER_string":self.host + ":" + str(self.port), "ptexec":self.initiator.pt_exec + " -logLevel=ERROR",
-                     "localport":self.ptproxy_local_port, "remoteaddress":self.host, "remoteport":self.port,
-                     "certs":self.certs_str, "LOCK":self.check, "IAT":self.initiator.obfs_level}
-            exec(code, globals)
-
-    def connect(self):
-        """Connect client."""
-        if self.number < self.req_num:
-            # pre-add the available connection count
-            # will be decremented if failure occurs
-            self.number += 1
-
-            connector = ClientConnector(self)
-
-            # connect through Tor if required, direct connection otherwise
-            # if self.tor_point:
-            #    point = SOCKS4Point(self.host, self.port, self.tor_point)
-            # else:
-            point = TCP4ClientEndpoint(reactor, "127.0.0.1", self.ptproxy_local_port)
-
-            deferred = connectProtocol(point, connector)
-            # trigger success or failure action depending on the result
-            deferred.addCallback(self.success)
-            deferred.addErrback(lambda ignored: self.retry())
-
-    def retry(self):
-        """Triggered when a failure connecting client occurs.
-
-        Decrement the number of available connections
-        (which is pre-added when trying to connect),
-        and retry until the max retry count is reached.
-        """
-        self.number -= 1
-        if self.retry_count < self.max_retry:
-            host, port = "127.0.0.1", self.ptproxy_local_port
-            logging.warning("retry connection to %s:%d" % (host, port))
-            self.retry_count += 1
-            self.connect()
-
-    def client_lost(self, conn):
-        """Triggered by a ClientConnector's connectionLost method.
-
-        Remove the closed connection and retry creating it.
-        """
-        
-        try:
-            self.client_connectors.remove(conn)
-            self.number -= 1  # #TODO: Whereelse is the number reduced?
-        except ValueError as err:
-            pass
-        # self.connect() 
-        # TODO: need to redesign the counting method, connection to a proxy will always success and then be lost when the actual client is down.

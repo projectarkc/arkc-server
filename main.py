@@ -10,7 +10,8 @@ from twisted.internet.error import CannotListenError
 from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
 
-from coordinator import Coordinator, Coordinator_pt
+from coordinator import Coordinator
+
 
 def start_proxy(port):
     """Start the internal HTTP proxy server.
@@ -36,7 +37,8 @@ if __name__ == "__main__":
     parser.add_argument("-vv", action="store_true", dest="vv",
                         help="show debug logs")
     parser.add_argument('-c', '--config', dest="config", default='config.json',
-                        help="You must specify a configuration files. By default ./config.json is used.")
+                        help="You must specify a configuration files. \
+                        By default ./config.json is used.")
 
     parser.add_argument('-ep', "--use-external-proxy", action="store_true",
                         help="use an external HTTPS proxy server running locally,\
@@ -56,7 +58,8 @@ if __name__ == "__main__":
         data = json.load(data_file)
         data_file.close()
     except Exception as err:
-        logging.error("Fatal error while loading configuration file.\n" + str(err))
+        logging.error("Fatal error while loading configuration file.\n" +
+                      str(err))
         quit()
 
     try:
@@ -64,7 +67,8 @@ if __name__ == "__main__":
             with open(client[0], "r") as f:
                 remote_cert_txt = f.read()
                 remote_cert = RSA.importKey(remote_cert_txt)
-                certs[sha1(remote_cert_txt).hexdigest()] = [remote_cert, client[1]]
+                certs[sha1(remote_cert_txt).hexdigest()] =\
+                     [remote_cert, client[1]]
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
@@ -82,7 +86,7 @@ if __name__ == "__main__":
 
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
-        
+
     if args.vv:
         logging.basicConfig(level=logging.DEBUG)
 
@@ -93,54 +97,41 @@ if __name__ == "__main__":
     else:
         if "proxy_port" not in data:
             data["proxy_port"] = 8123
-            
+
     if "udp_port" not in data:
         data["udp_port"] = 53
-        
+
     if "delegated_domain" not in data:
         data["delegated_domain"] = "testing.arkc.org"
-        
+
     if "self_domain" not in data:
         data["self_domain"] = "freedom.arkc.org"
-        
+
     if "obfs4_exec" not in data:
         data["obfs4_exec"] = "obfs4proxy"
-        
+
     if "obfs_level" not in data:
         data["obfs_level"] = 0
 
     # Start the loop
     try:
-        if data["obfs_level"] != 0:
-            reactor.listenUDP(
-                data["udp_port"],
-                Coordinator_pt(
-                            data["proxy_port"],
-                            None,
-                            local_cert,
-                            certs,
-                            data["delegated_domain"],
-                            data["self_domain"],
-                            data["obfs4_exec"],
-                            data["obfs_level"]
-                )
+        reactor.listenUDP(
+            data["udp_port"],
+            Coordinator(
+                data["proxy_port"],
+                None,
+                local_cert,
+                certs,
+                data["delegated_domain"],
+                data["self_domain"],
+                data["obfs4_exec"],
+                data["obfs_level"]
             )
-        else:
-            reactor.listenUDP(
-                              data["udp_port"],
-                              Coordinator(
-                                          data["proxy_port"],
-                                          None,
-                                          local_cert,
-                                          certs,
-                                          data["delegated_domain"],
-                                          data["self_domain"]
-                )
-            )
+        )
     except CannotListenError as err:
         print(err.socketError)
-        if data["udp_port"] <= 1024 and \
-            str(err.socketError) == "[Errno 13] Permission denied":
+        if data["udp_port"] <= 1024 and str(err.socketError) == "[Errno 13] \
+                Permission denied":
             print("root privilege may be required to listen to low ports")
         exit()
 
