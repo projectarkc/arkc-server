@@ -54,7 +54,7 @@ class ClientConnector(Protocol):
         Reset the connection after a random time (between 30 to 90 secs),
         and tell Control to re-add connection for better performance.
         """
-        logging.info("connected to client " + 
+        logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
 
@@ -63,7 +63,7 @@ class ClientConnector(Protocol):
 
         Split, decrypt and hand them back to Control.
         """
-        logging.debug("received %d bytes from client " % len(recv_data) + 
+        logging.debug("received %d bytes from client " % len(recv_data) +
                      addr_to_str(self.transport.getPeer()))
         self.buffer += recv_data
 
@@ -90,7 +90,7 @@ class ClientConnector(Protocol):
 
         Call Control to handle it.
         """
-        logging.info("client connection lost: " + 
+        logging.info("client connection lost: " +
                      addr_to_str(self.transport.getPeer()))
         self.initiator.client_lost(self)
 
@@ -100,8 +100,6 @@ class ClientConnector(Protocol):
         Encrypted packets should be separated by split_char.
         The first 2 bytes of a raw packet should be its ID.
         """
-        
-        # TODO: should use buffer here and split to 4096 packages
 
         to_write = self.cipher.encrypt(conn_id + str(index) + data) + self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
