@@ -51,7 +51,7 @@ For a full list of settings:
 | local_cert_path       | str, path of server pri  | REQUIRED             |
 | clients       | list, (path of client pub, sha1 of client pri) pairs  | REQUIRED             |
 | obfs4_exec		| str, command line of obfs4proxy executable | "obfs4proxy" |
-| obfs_level		| integer, obfs leve 0~3 | 0 |
+| obfs_level		| integer, obfs level 0~3 | 0 |
 
 Note: if obfs_level is set to a non-zero value, obfs4_exec must be appropriate set. Obfs4 will use an IAT mode of (obfs_level - 1), which means if obfs_level is set to 2 or 3, the connection speed may be affected.
 
