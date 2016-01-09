@@ -4,3 +4,4 @@ txsocksx
 pyotp
 ipaddress
 dnslib
+psutil
