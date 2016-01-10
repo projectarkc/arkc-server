@@ -197,7 +197,10 @@ class Control:
         """Handle request from client.
         Should be decrypted by ClientConnector first.
         """
-        conn_id, index, data = recv[:2], int(recv[2:5]), recv[5:]
+
+        # flag is 0 for normal data packet, 1 for ping packet
+        flag, conn_id, index, data =\
+            int(recv[0]), recv[1:3], int(recv[3:6]), recv[6:]
 
         if data == self.close_char:
             # close connection and remove the ID

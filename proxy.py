@@ -13,10 +13,11 @@ class ProxyConnector(Protocol):
     def __init__(self, initiator, conn_id):
         self.initiator = initiator
         self.conn_id = conn_id
-        # self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.buffer = ''
         self.write_queue = deque()
-        self.segment_size = 4084  # 4096(total) - 2(id) - 3(index) - 7(splitchar)
+
+        # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
+        self.segment_size = 4083
 
         # set as True when self.transport becomes None,
         # but self.connectionLost() is not triggered

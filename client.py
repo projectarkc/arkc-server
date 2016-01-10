@@ -7,6 +7,7 @@ import struct
 from utils import AESCipher
 from utils import addr_to_str
 
+
 class ClientConnector(Protocol):
     """Handle one connection to a client.
 
@@ -98,10 +99,15 @@ class ClientConnector(Protocol):
         """Encrypt and write data the client.
 
         Encrypted packets should be separated by split_char.
-        The first 2 bytes of a raw packet should be its ID.
+        Raw packet structure:
+            type    (1 byte)   (0 for normal data packet)
+            id      (2 bytes)
+            index   (3 bytes)
+            data
         """
 
-        to_write = self.cipher.encrypt(conn_id + str(index) + data) + self.split_char
+        to_write = self.cipher.encrypt("0" + conn_id + str(index) + data) +\
+            self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
                      addr_to_str(self.transport.getPeer()),
                      conn_id))
