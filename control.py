@@ -1,5 +1,6 @@
 import logging
-from random import expovariate, choice
+from random import expovariate
+from utils import weighted_choice
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
@@ -238,7 +239,9 @@ class Control:
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
         if len(self.client_connectors) > 0:
-            conn = choice(self.client_connectors)
+            # TODO: better algorithm
+            f = lambda c: 1.0 / (c.latency ** 2 + 1)
+            conn = weighted_choice(self.client_connectors, f)
             conn.write(data, conn_id, self.client_write_queues_index[conn_id])
             self.client_write_queues_index[conn_id] += 1
             if self.client_write_queues_index[conn_id] == 1000:
