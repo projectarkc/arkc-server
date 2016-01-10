@@ -34,12 +34,9 @@ class ProxyConnector(Protocol):
         logging.debug("received %d bytes from proxy with id %s" %
                      (len(response), self.conn_id))
         self.buffer += response
-        while len(self.buffer) >= self.segment_size:
+        while self.buffer:
             self.write_queue.append(self.buffer[:self.segment_size])
             self.buffer = self.buffer[self.segment_size:]
-        if self.buffer:
-            self.write_queue.append(self.buffer)
-            self.buffer = ""
         self.respond()
 
     def connectionLost(self, reason):
