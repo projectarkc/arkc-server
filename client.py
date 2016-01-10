@@ -1,11 +1,16 @@
 import logging
 
 from os import urandom
+from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
+from time import time
 import struct
 
 from utils import AESCipher
 from utils import addr_to_str
+from utils import get_timestamp, parse_timestamp
+
+PING_INTERVAL = 10
 
 
 class ClientConnector(Protocol):
@@ -37,6 +42,8 @@ class ClientConnector(Protocol):
         self.buffer = ""
         self.writeindex = {}
 
+        self.latency = 10000
+
     def generate_auth_msg(self):
         """Generate encrypted message.
 
@@ -49,15 +56,46 @@ class ClientConnector(Protocol):
         pw_enc = self.client_pub.encrypt(self.session_pw, None)[0]
         return hex_sign + pw_enc
 
-    def connectionMade(self):
-        """Event handler of being successfully connected to the client.
+    def ping_send(self):
+        """Send the initial ping message to the client at a certain interval.
 
-        Reset the connection after a random time (between 30 to 90 secs),
-        and tell Control to re-add connection for better performance.
+        Ping mechanism (S for server, C for client, t-i for i-th timestamp):
+            packet 0: S->C, t-0
+            packet 1: C->S, t-0 + t-1
+            packet 2: S->C, t-1
+        In this way, both server and client get the round-trip latency.
+
+        Packet format (before encryption):
+            "1"         (1 byte)          (type flag for ping)
+            seq         (1 byte)          (0, 1 or 2)
+            timestamp   (11 or 22 bytes)  (time in milliseconds, in hexagon)
         """
+        raw_packet = "1" + "0" + get_timestamp()
+        to_write = self.cipher.encrypt(raw_packet) + self.split_char
+        if self.transport:
+            logging.debug("send ping0")
+            self.transport.write(to_write)
+            reactor.callLater(PING_INTERVAL, self.ping_send)
+
+    def ping_recv(self, msg):
+        """Parse ping 1 (without flag & seq) and send ping 2."""
+        logging.debug("recv ping1")
+        time0 = parse_timestamp(msg[:11])
+        self.latency = int(time() * 1000) - time0
+        logging.debug("latency: %dms" % self.latency)
+        raw_packet = "1" + "2" + msg[11:]
+        to_write = self.cipher.encrypt(raw_packet) + self.split_char
+        if self.transport:
+            logging.debug("send ping2")
+            self.transport.write(to_write)
+
+
+    def connectionMade(self):
+        """Event handler of being successfully connected to the client."""
         logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
+        self.ping_send()
 
     def dataReceived(self, recv_data):
         """Event handler of receiving some data from client.
@@ -71,18 +109,16 @@ class ClientConnector(Protocol):
         # a list of encrypted data packages
         # the last item may be incomplete
         recv = self.buffer.split(self.split_char)
-        # if self.authed:
         # leave the last (may be incomplete) item intact
         for text_enc in recv[:-1]:
             text_dec = self.cipher.decrypt(text_enc)
-            self.initiator.client_recv(text_dec)
-        # else:
-    #        if len(recv) > 1:
-    #            try:
-    #                assert self.client_pub.decrypt(recv[0]) == pyotp.HOTP(self.initiator.client_pri_sha1)
-    #            except AssertionError as err:
-    #                logging.error("client cannot be authenticated. conn closing.")
-    #                self.connectionLost()
+            # flag is 0 for normal data packet, 1 for ping packet
+            flag = int(text_dec[0])
+            if flag == 0:
+                self.initiator.client_recv(text_dec[1:])
+            else:
+                # strip off type and seq (both are always 1)
+                self.ping_recv(text_dec[2:])
 
         self.buffer = recv[-1]  # incomplete message
 

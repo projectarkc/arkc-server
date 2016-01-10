@@ -27,6 +27,7 @@ def exit_handler():
 
 class Control:
     """The core part of the server, acting as a bridge between client and proxy.
+
     One Control instance corresponds to one client (with unique SHA1).
     Its functions include:
         - Maintain a certain number of connections to client
@@ -138,6 +139,7 @@ class Control:
 
     def retry(self):
         """Triggered when a failure connecting client occurs.
+
         Decrement the number of available connections
         (which is pre-added when trying to connect),
         and retry until the max retry count is reached.
@@ -151,9 +153,11 @@ class Control:
 
     def success(self, conn):
         """Triggered when successfully connected to client.
+
         Reset retry count and continue adding connections until the required
         available connection number (specified by client through UDP message)
         is reached.
+        Reset the connection after a random time for better performance.
         """
         self.retry_count = 0
         self.client_connectors.append(conn)
@@ -166,6 +170,7 @@ class Control:
 
     def new_proxy_conn(self, conn_id):
         """Create a connection to HTTP proxy corresponding to the given ID.
+
         Return a Deferred object of the proxy connector.
         """
         logging.info("adding connection id " + conn_id)
@@ -183,6 +188,7 @@ class Control:
 
     def del_proxy_conn(self, conn_id):
         """Remove the given ID.
+
         Triggered when the ID is no longer in use.
         """
         logging.info("deleting connection id " + conn_id)
@@ -195,12 +201,10 @@ class Control:
 
     def client_recv(self, recv):
         """Handle request from client.
+
         Should be decrypted by ClientConnector first.
         """
-
-        # flag is 0 for normal data packet, 1 for ping packet
-        flag, conn_id, index, data =\
-            int(recv[0]), recv[1:3], int(recv[3:6]), recv[6:]
+        conn_id, index, data = recv[:2], int(recv[2:5]), recv[5:]
 
         if data == self.close_char:
             # close connection and remove the ID
@@ -244,6 +248,7 @@ class Control:
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
+
         May result in better performance.
         """
         # conn.transport.loseConnection()
@@ -253,6 +258,7 @@ class Control:
 
     def client_lost(self, conn):
         """Triggered by a ClientConnector's connectionLost method.
+
         Remove the closed connection and retry creating it.
         """
         try:
@@ -286,13 +292,14 @@ class Control:
         """Call client_write on receiving data from proxy."""
         try:
             self.client_write(data, conn_id)
-        except AssertionError as err:
+        except AssertionError:
             logging.error("%i dumped from proxy for no connections with the client")
             logging.error("related proxy connection closing")
             self.proxy_lost(conn_id)
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.
+
         That is when conn.transport becomes None.
         """
         # TODO: why does this happen?
@@ -304,6 +311,7 @@ class Control:
 
     def proxy_finish(self, conn_id):
         """Write all pending response data to client and remove ID.
+
         Called when proxy connection is lost.
         """
         if len(self.client_connectors) != 0:

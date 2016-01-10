@@ -1,9 +1,20 @@
 from Crypto.Cipher import AES
+from time import time
 
 
 def addr_to_str(addr):
     """Convert a Twisted IAddress object to readable string."""
     return addr.host + ":" + str(addr.port)
+
+
+def get_timestamp():
+    """Get the current time in milliseconds, in hexagon."""
+    return hex(int(time() * 1000))[2:]
+
+
+def parse_timestamp(timestamp):
+    """Convert hexagon timestamp to integer (time in milliseconds)."""
+    return int(timestamp, 16)
 
 
 class AESCipher:
