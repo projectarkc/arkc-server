@@ -22,7 +22,8 @@ def exit_handler():
 
     for proc in psutil.process_iter():
         # check whether the process name matches
-        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe": #TODO: figure out what's wrong with PT_PROC
+        # TODO: figure out what's wrong with PT_PROC
+        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe":
             proc.kill()
 
 
@@ -196,7 +197,8 @@ class Control:
         try:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
             assert self.proxy_connectors.pop(conn_id, None) is not None
-            assert self.client_write_queues_index.pop(conn_id, None) is not None
+            assert self.client_write_queues_index.pop(
+                conn_id, None) is not None
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
 
@@ -247,7 +249,8 @@ class Control:
             if self.client_write_queues_index[conn_id] == 1000:
                 self.client_write_queues_index[conn_id] = 100
         else:
-            logging.error("no client_connectiors available, %i dumped." % len(data))
+            logging.error(
+                "no client_connectiors available, %i dumped." % len(data))
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
@@ -270,7 +273,8 @@ class Control:
         except ValueError as err:
             pass
 
-        # TODO: need to redesign the counting method, connection to a proxy will always success and then be lost when the actual client is down.
+        # TODO: need to redesign the counting method, connection to a proxy
+        # will always success and then be lost when the actual client is down.
         if self.certs_str is None:
             self.connect()
 
@@ -278,7 +282,8 @@ class Control:
         """Forward all the data pending for the ID to the HTTP proxy."""
 
         while conn_id in self.proxy_write_queues and self.proxy_write_queues_index[conn_id] in self.proxy_write_queues[conn_id]:
-            data = self.proxy_write_queues[conn_id].pop(self.proxy_write_queues_index[conn_id])
+            data = self.proxy_write_queues[conn_id].pop(
+                self.proxy_write_queues_index[conn_id])
             self.next_write_index(conn_id)
             if data is not None and len(data) > 0:
                 conn = self.proxy_connectors[conn_id]
@@ -286,9 +291,9 @@ class Control:
                     self.proxy_lost(conn_id)
                 else:
                     logging.debug("sending %d bytes to proxy %s from id %s" % (
-                                    len(data),
-                                    addr_to_str(conn.transport.getPeer()),
-                                    conn_id))
+                        len(data),
+                        addr_to_str(conn.transport.getPeer()),
+                        conn_id))
                     conn.transport.write(data)
 
     def proxy_recv(self, data, conn_id):
@@ -296,7 +301,8 @@ class Control:
         try:
             self.client_write(data, conn_id)
         except AssertionError:
-            logging.error("%i dumped from proxy for no connections with the client")
+            logging.error(
+                "%i dumped from proxy for no connections with the client")
             logging.error("related proxy connection closing")
             self.proxy_lost(conn_id)
 
@@ -325,4 +331,3 @@ class Control:
         self.proxy_write_queues_index[conn_id] += 1
         if self.proxy_write_queues_index[conn_id] == 1000:
             self.proxy_write_queues_index[conn_id] = 100
-
