@@ -11,7 +11,7 @@ def addr_to_str(addr):
 
 def get_timestamp():
     """Get the current time in milliseconds, in hexagon."""
-    return hex(int(time() * 1000))[2:]
+    return hex(int(time() * 1000)).rstrip("L").lstrip("0x")
 
 
 def parse_timestamp(timestamp):
