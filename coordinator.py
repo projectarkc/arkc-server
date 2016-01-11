@@ -1,15 +1,16 @@
 import logging
 import dnslib
 import hashlib
-import binascii
 import ipaddress
-import base64
+import binascii
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
 from control import Control
 import pyotp
+
+from utils import urlsafe_b64_short_decode
 
 MAX_SALT_BUFFER = 255
 
@@ -92,9 +93,9 @@ class Coordinator(DatagramProtocol):
         h.update(self.certs[client_sha1][1] + msg[3] + msg[4])
         assert msg[1] == pyotp.TOTP(h.hexdigest()).now()
         if msg[3][-1:] != 'G':
-            remote_ip = str(ipaddress.ip_address(int(msg[3], 16)))
+            remote_ip = str(ipaddress.ip_address(int(msg[3], 36)))
         else:
-            remote_ip = str(ipaddress.IPv6Address(int(msg[3][:-1], 16)))
+            remote_ip = str(ipaddress.IPv6Address(int(msg[3][:-1], 36)))
         main_pw = binascii.unhexlify(msg[2])
         number = int(num_hex, 16)
         remote_port = int(port_hex, 16)
@@ -108,7 +109,7 @@ class Coordinator(DatagramProtocol):
             # ptproxy enabled
             certs_original = msg[5] + msg[6]
             certs_original += '=' * ((160 - len(certs_original)) % 4)
-            certs_str = base64.b64decode(certs_original)
+            certs_str = urlsafe_b64_short_decode(certs_original)
 
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
 
@@ -182,5 +183,5 @@ class Coordinator(DatagramProtocol):
             logging.error("authentication failed or corrupt request")
         except ClientAddrChanged:
             logging.error("client address or port changed")
-        except Exception as err:
-            logging.error("unknown error: " + str(err))
+        # except Exception as err:
+        #    logging.error("unknown error: " + str(err))

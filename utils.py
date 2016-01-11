@@ -2,6 +2,8 @@ from Crypto.Cipher import AES
 from time import time
 import random
 import bisect
+import base64
+import string
 
 
 def addr_to_str(addr):
@@ -51,3 +53,14 @@ class AESCipher:
         dec = self.cipher.decrypt(data)
         self.reset()
         return dec
+
+
+def urlsafe_b64_short_encode(value):
+    return base64.urlsafe_b64encode(value.encode("UTF-8"))\
+        .decode("UTF-8").replace('=', '')
+
+
+def urlsafe_b64_short_decode(text):
+    value = text
+    value += '=' * ((4 - len(value)) % 4)
+    return base64.urlsafe_b64decode(value)
