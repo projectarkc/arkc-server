@@ -47,9 +47,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # mapping client public sha1 --> (RSA key object, client private sha1)
-    certs = dict()
-
     data = {}
 
     # Load json configuration file
@@ -63,12 +60,9 @@ if __name__ == "__main__":
         quit()
 
     try:
-        for client in data["clients"]:
-            with open(client[0], "r") as f:
-                remote_cert_txt = f.read()
-                remote_cert = RSA.importKey(remote_cert_txt)
-                certs[sha1(remote_cert_txt).hexdigest()] =\
-                     [remote_cert, client[1]]
+        with open(data["central_cert"], "r") as f:
+            remote_cert_txt = f.read()
+            remote_cert = RSA.importKey(remote_cert_txt)
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
@@ -121,7 +115,7 @@ if __name__ == "__main__":
                 data["proxy_port"],
                 None,
                 local_cert,
-                certs,
+                remote_cert,
                 data["delegated_domain"],
                 data["self_domain"],
                 data["obfs4_exec"],
