@@ -47,7 +47,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    data = {}
+    data = dict()
+    certs = dict()
 
     # Load json configuration file
     try:
@@ -61,8 +62,20 @@ if __name__ == "__main__":
 
     try:
         with open(data["central_cert"], "r") as f:
-            remote_cert_txt = f.read()
-            remote_cert = RSA.importKey(remote_cert_txt)
+            central_cert_txt = f.read()
+            central_cert = RSA.importKey(central_cert_txt)
+    except Exception as err:
+        print ("Fatal error while loading client certificate.")
+        print (err)
+        quit()
+
+    try:
+        for client in data["clients"]:
+            with open(client[0], "r") as f:
+                remote_cert_txt = f.read()
+                remote_cert = RSA.importKey(remote_cert_txt)
+                certs[sha1(remote_cert_txt).hexdigest()] =\
+                     [remote_cert, client[1]]
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
@@ -93,7 +106,7 @@ if __name__ == "__main__":
             data["proxy_port"] = 8123
 
     if "udp_port" not in data:
-        data["udp_port"] = 53
+        data["udp_port"] = 8000
 
     if "delegated_domain" not in data:
         data["delegated_domain"] = "testing.arkc.org"
@@ -115,7 +128,8 @@ if __name__ == "__main__":
                 data["proxy_port"],
                 None,
                 local_cert,
-                remote_cert,
+                certs,
+                central_cert,
                 data["delegated_domain"],
                 data["self_domain"],
                 data["obfs4_exec"],

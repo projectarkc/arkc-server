@@ -30,7 +30,7 @@ class Coordinator(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-    def __init__(self, proxy_port, tor_port, pri, cert,
+    def __init__(self, proxy_port, tor_port, pri, certs, central_pub,
                  delegatedomain, selfdomain, pt_exec, obfs_level):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
@@ -42,7 +42,8 @@ class Coordinator(DatagramProtocol):
         self.usedports = []
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
-        self.central_pub = cert
+        self.central_pub = central_pub
+        self.certs = certs
 
         # dict mapping client sha-1 to control
         self.controls = dict()
@@ -129,8 +130,8 @@ class Coordinator(DatagramProtocol):
             pass  # TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
-        except AssertionError:
-            logging.error("authentication failed or corrupt request")
+        # except AssertionError:
+        #    logging.error("authentication failed or corrupt request")
         except ClientAddrChanged:
             logging.error("client address or port changed")
         # except Exception as err:
