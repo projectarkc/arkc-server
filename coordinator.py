@@ -90,7 +90,7 @@ class Coordinator(DatagramProtocol):
 
         num_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
         h = hashlib.sha256()
-        h.update(self.certs[client_sha1][1] + msg[3] + msg[4])
+        h.update(self.certs[client_sha1][1] + msg[3] + msg[4] + num_hex)
         assert msg[1] == pyotp.TOTP(h.hexdigest()).now()
         if msg[3][-1:] != 'G':
             remote_ip = str(ipaddress.ip_address(int(msg[3], 36)))
