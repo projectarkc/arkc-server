@@ -50,6 +50,7 @@ class Control:
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
+        self.meek_point = self.initiator.meek_point
         self.client_pub = client_pub
         self.client_pri_sha1 = client_pri_sha1
         self.host = host
@@ -115,7 +116,7 @@ class Control:
             globals = {
                 "SERVER_string": self.host + ":" + str(self.port),
                 "ptexec": self.initiator.pt_exec +
-                " --url=https://meek-reflect.appspot.com/ --front=www.google.com",
+                " --url=http://127.0.0.1:8080/ --front=www.google.com",
                 "localport": self.ptproxy_local_port,
                 "remoteaddress": self.host,
                 "remoteport": self.port
@@ -150,6 +151,8 @@ class Control:
             # connect through Tor if required, direct connection otherwise
             if self.tor_point:
                 point = SOCKS5Point(self.host, self.port, self.tor_point)
+            elif self.meek_point:
+                point = SOCKS5Point(self.host, self.port, self.meek_point)
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
 
