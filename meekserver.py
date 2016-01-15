@@ -114,11 +114,11 @@ CFG = {
     "state": tempfile.gettempdir(),
     "local": "127.0.0.1:" + str(localport),
     "ptname": "meek",
-    "ptserveropt": ""
+    "ptserveropt": "",
+    "ptargs": ""
 }
 
 CFG["server"] = remoteaddress + ":" + str(remoteport)
-CFG["ptargs"] = "url=https://meek-reflect.appspot.com/;front=www.google.com"
 CFG["ptproxy"] = ""
 CFG["ptexec"] = ptexec
 
@@ -269,6 +269,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
 
 
+# TODO: should it be deleted?
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
     # def __init__(self, initiator):

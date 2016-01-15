@@ -23,7 +23,8 @@ def exit_handler():
     for proc in psutil.process_iter():
         # check whether the process name matches
         # TODO: figure out what's wrong with PT_PROC
-        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe":
+        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe"\
+                or proc.name() == "meek-client" or proc.name() == "meek-client.exe":
             proc.kill()
 
 
@@ -113,7 +114,8 @@ class Control:
             code = compile(f.read(), "meekserver.py", 'exec')
             globals = {
                 "SERVER_string": self.host + ":" + str(self.port),
-                "ptexec": self.initiator.pt_exec + " -logLevel=ERROR",
+                "ptexec": self.initiator.pt_exec +
+                " --url=https://meek-reflect.appspot.com/ --front=www.google.com",
                 "localport": self.ptproxy_local_port,
                 "remoteaddress": self.host,
                 "remoteport": self.port
