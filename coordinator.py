@@ -105,11 +105,13 @@ class Coordinator(DatagramProtocol):
 
         if not self.obfs_level:
             certs_str = None
-        else:
+        elif self.obfs_level <= 2:
             # ptproxy enabled
             certs_original = msg[5] + msg[6]
             certs_original += '=' * ((160 - len(certs_original)) % 4)
             certs_str = urlsafe_b64_short_decode(certs_original)
+        elif self.obfs_level ==3:
+            ##TODO
 
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
 

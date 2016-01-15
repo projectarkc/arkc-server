@@ -113,12 +113,12 @@ CFG = {
     "role": "client",
     "state": tempfile.gettempdir(),
     "local": "127.0.0.1:" + str(localport),
-    "ptname": "obfs4",
+    "ptname": "meek",
     "ptserveropt": ""
 }
 
 CFG["server"] = remoteaddress + ":" + str(remoteport)
-CFG["ptargs"] = "url=" + URL + ";front=freedom.arkc.org"
+CFG["ptargs"] = "url=https://meek-reflect.appspot.com/;front=www.google.com"
 CFG["ptproxy"] = ""
 CFG["ptexec"] = ptexec
 
@@ -829,7 +829,6 @@ def parseptline(stdout):
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
-            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info

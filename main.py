@@ -107,8 +107,8 @@ if __name__ == "__main__":
     if "self_domain" not in data:
         data["self_domain"] = "freedom.arkc.org"
 
-    if "obfs4_exec" not in data:
-        data["obfs4_exec"] = "obfs4proxy"
+    if "pt_exec" not in data:
+        data["pt_exec"] = "obfs4proxy"
 
     if "obfs_level" not in data:
         data["obfs_level"] = 0
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 certs,
                 data["delegated_domain"],
                 data["self_domain"],
-                data["obfs4_exec"],
+                data["pt_exec"],
                 data["obfs_level"]
             )
         )

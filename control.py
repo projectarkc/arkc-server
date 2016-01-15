@@ -75,6 +75,7 @@ class Control:
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
         # ptproxy enabled
+        # TODO: EDIT!!! Don't keep self.check, no longer needed
         if self.certs_str:
             self.ptproxy_local_port = random.randint(30000, 40000)
             while(self.ptproxy_local_port in initiator.usedports):
@@ -100,6 +101,22 @@ class Control:
                 "certs": self.certs_str,
                 "LOCK": self.check,
                 "IAT": self.initiator.obfs_level
+            }
+            self.host = "127.0.0.1"
+            self.port = self.ptproxy_local_port
+            exec(code, globals)
+
+    def meekinit(self):
+        atexit.register(exit_handler)
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "meekserver.py") as f:
+            code = compile(f.read(), "meekserver.py", 'exec')
+            globals = {
+                "SERVER_string": self.host + ":" + str(self.port),
+                "ptexec": self.initiator.pt_exec + " -logLevel=ERROR",
+                "localport": self.ptproxy_local_port,
+                "remoteaddress": self.host,
+                "remoteport": self.port
             }
             self.host = "127.0.0.1"
             self.port = self.ptproxy_local_port
