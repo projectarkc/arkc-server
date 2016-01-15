@@ -122,6 +122,8 @@ CFG["server"] = remoteaddress + ":" + str(remoteport)
 CFG["ptproxy"] = ""
 CFG["ptexec"] = ptexec
 
+print(CFG)
+
 TRANSPORT_VERSIONS = ('1',)
 
 startupinfo = None

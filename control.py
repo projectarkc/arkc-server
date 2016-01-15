@@ -78,12 +78,13 @@ class Control:
 
         # ptproxy enabled
         # TODO: EDIT!!! Don't keep self.check, no longer needed
-        if self.certs_str:
+        if self.certs_str or self.meek_point:
             self.ptproxy_local_port = random.randint(30000, 40000)
-            while(self.ptproxy_local_port in initiator.usedports):
+            while self.ptproxy_local_port in initiator.usedports:
                 self.ptproxy_local_port += 1
             initiator.usedports.append(self.ptproxy_local_port)
-            pt = threading.Thread(target=self.ptinit)
+            pt = threading.Thread(
+                target=(self.ptinit if self.certs_str else self.meekinit))
             pt.setDaemon(True)
             self.check = threading.Event()
             pt.start()
