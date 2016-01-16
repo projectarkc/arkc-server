@@ -53,8 +53,8 @@ class Control:
         self.obfs_level = self.initiator.obfs_level
         self.client_pub = client_pub
         self.client_pri_sha1 = client_pri_sha1
-        self.host = host
-        self.port = port
+        self.original_host = self.host = host
+        self.original_port = self.port = port
         self.main_pw = main_pw
         self.req_num = req_num
         self.certs_str = certs_str
@@ -127,15 +127,13 @@ class Control:
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):
-        if self.host != host:
-            self.host = host
-            logging.info("host address change")
-        if self.port != port:
-            self.port = port
-            logging.info("port to connect change")
-        if self.main_pw != main_pw:
-            self.main_pw = main_pw
-            logging.info("main password change")
+        if self.original_host != host or self.original_port != port:
+            if not self.obfs_level:
+                self.original_host = self.host = host
+                self.original_port = self.port = port
+                logging.info("client address change")
+            else:
+                logging.error("pt mode does not allow client address change")
         if self.host != host:
             self.req_num = req_num
 
