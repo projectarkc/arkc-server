@@ -115,8 +115,7 @@ class Control:
         if self.main_pw != main_pw:
             self.main_pw = main_pw
             logging.info("main password change")
-        if self.host != host:
-            self.req_num = req_num
+        self.req_num = req_num
 
     def connect(self):
         """Connect client."""
