@@ -140,7 +140,7 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a Control
         to it if it is trusted.
         """
-        # logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
+        logging.debug("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
             dnsq = dnslib.DNSRecord.parse(data)
             query_data = str(dnsq.q.qname).split('.')
