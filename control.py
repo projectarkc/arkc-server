@@ -3,7 +3,6 @@ from random import expovariate
 from utils import weighted_choice
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
-from txsocksx.client import SOCKS4ClientEndpoint as SOCKS4Point
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 import time
 import threading
@@ -123,8 +122,8 @@ class Control:
                 "remoteaddress": self.host,
                 "remoteport": self.port
             }
-#             self.host = "127.0.0.1"
-#             self.port = self.ptproxy_local_port
+            self.host = "127.0.0.1"
+            self.port = self.ptproxy_local_port
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):
@@ -153,11 +152,6 @@ class Control:
             # connect through Tor if required, direct connection otherwise
             if self.tor_point:
                 point = SOCKS5Point(self.host, self.port, self.tor_point)
-            elif self.obfs_level == 3:
-                host = "127.0.0.1"
-                port = self.ptproxy_local_port
-                meek_point = TCP4ClientEndpoint(reactor, host, port)
-                point = SOCKS4Point(self.host, self.port, meek_point)
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
 
