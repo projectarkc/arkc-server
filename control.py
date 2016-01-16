@@ -280,21 +280,16 @@ class Control:
         """
         if conn.cronjob:
             conn.cronjob.cancel()
-        self.client_connectors.remove(conn)
-        conn.transport.loseConnection()
-        # self.client_lost(conn)
-        # conn.write(self.close_char, "00", 100)
-        # reactor.callLater(1.0, conn.connectionLost, None)
+        self.client_lost(conn)
+        conn.write(self.close_char, "00", 100)
 
     def client_lost(self, conn):
         """Triggered by a ClientConnector's connectionLost method.
 
         Remove the closed connection and retry creating it.
         """
-        try:
+        if conn in self.client_connectors:
             self.client_connectors.remove(conn)
-        except ValueError:
-            pass
         self.number -= 1
 
         # TODO: need to redesign the counting method, connection to a proxy
