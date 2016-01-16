@@ -44,6 +44,8 @@ class ClientConnector(Protocol):
 
         self.latency = 10000
 
+        self.cronjob = None
+
     def generate_auth_msg(self):
         """Generate encrypted message.
 
@@ -75,7 +77,7 @@ class ClientConnector(Protocol):
         if self.transport:
             logging.debug("send ping0")
             self.transport.write(to_write)
-            reactor.callLater(PING_INTERVAL, self.ping_send)
+            self.cronjob = reactor.callLater(PING_INTERVAL, self.ping_send)
 
     def ping_recv(self, msg):
         """Parse ping 1 (without flag & seq) and send ping 2."""

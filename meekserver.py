@@ -113,14 +113,16 @@ CFG = {
     "role": "client",
     "state": tempfile.gettempdir(),
     "local": "127.0.0.1:" + str(localport),
-    "ptname": "obfs4",
-    "ptserveropt": ""
+    "ptname": "meek",
+    "ptserveropt": "",
+    "ptargs": ""
 }
 
 CFG["server"] = remoteaddress + ":" + str(remoteport)
-CFG["ptargs"] = "url=" + URL + ";front=freedom.arkc.org"
 CFG["ptproxy"] = ""
 CFG["ptexec"] = ptexec
+
+print(CFG)
 
 TRANSPORT_VERSIONS = ('1',)
 
@@ -269,6 +271,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
 
 
+# TODO: should it be deleted?
 class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
     # def __init__(self, initiator):
@@ -829,7 +832,6 @@ def parseptline(stdout):
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
-            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info

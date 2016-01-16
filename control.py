@@ -23,7 +23,8 @@ def exit_handler():
     for proc in psutil.process_iter():
         # check whether the process name matches
         # TODO: figure out what's wrong with PT_PROC
-        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe":
+        if proc.name() == "obfs4proxy" or proc.name() == "obfs4proxy.exe"\
+                or proc.name() == "meek-client" or proc.name() == "meek-client.exe":
             proc.kill()
 
 
@@ -49,10 +50,11 @@ class Control:
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
+        self.obfs_level = self.initiator.obfs_level
         self.client_pub = client_pub
         self.client_pri_sha1 = client_pri_sha1
-        self.host = host
-        self.port = port
+        self.original_host = self.host = host
+        self.original_port = self.port = port
         self.main_pw = main_pw
         self.req_num = req_num
         self.certs_str = certs_str
@@ -75,16 +77,18 @@ class Control:
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
         # ptproxy enabled
-        if self.certs_str:
+        # TODO: EDIT!!! Don't keep self.check, no longer needed
+        if self.certs_str or self.obfs_level == 3:
             self.ptproxy_local_port = random.randint(30000, 40000)
-            while(self.ptproxy_local_port in initiator.usedports):
+            while self.ptproxy_local_port in initiator.usedports:
                 self.ptproxy_local_port += 1
             initiator.usedports.append(self.ptproxy_local_port)
-            pt = threading.Thread(target=self.ptinit)
+            pt = threading.Thread(
+                target=(self.ptinit if self.certs_str else self.meekinit))
             pt.setDaemon(True)
             self.check = threading.Event()
             pt.start()
-            self.check.wait(1000)
+            self.check.wait(3)
 
     def ptinit(self):
         atexit.register(exit_handler)
@@ -105,16 +109,31 @@ class Control:
             self.port = self.ptproxy_local_port
             exec(code, globals)
 
+    def meekinit(self):
+        atexit.register(exit_handler)
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "meekserver.py") as f:
+            code = compile(f.read(), "meekserver.py", 'exec')
+            globals = {
+                "SERVER_string": self.host + ":" + str(self.port),
+                "ptexec": self.initiator.pt_exec +
+                " --url=https://arkc-reflector.appspot.com/ --front=www.google.com",
+                "localport": self.ptproxy_local_port,
+                "remoteaddress": self.host,
+                "remoteport": self.port
+            }
+            self.host = "127.0.0.1"
+            self.port = self.ptproxy_local_port
+            exec(code, globals)
+
     def update(self, host, port, main_pw, req_num):
-        if self.host != host:
-            self.host = host
-            logging.info("host address change")
-        if self.port != port:
-            self.port = port
-            logging.info("port to connect change")
-        if self.main_pw != main_pw:
-            self.main_pw = main_pw
-            logging.info("main password change")
+        if self.original_host != host or self.original_port != port:
+            if not self.obfs_level:
+                self.original_host = self.host = host
+                self.original_port = self.port = port
+                logging.info("client address change")
+            else:
+                logging.error("pt mode does not allow client address change")
         self.req_num = req_num
 
     def connect(self):
@@ -256,21 +275,19 @@ class Control:
 
         May result in better performance.
         """
-        # conn.transport.loseConnection()
+        if conn.cronjob:
+            conn.cronjob.cancel()
         self.client_lost(conn)
         conn.write(self.close_char, "00", 100)
-        reactor.callLater(1.0, conn.connectionLost, None)
 
     def client_lost(self, conn):
         """Triggered by a ClientConnector's connectionLost method.
 
         Remove the closed connection and retry creating it.
         """
-        try:
+        if conn in self.client_connectors:
             self.client_connectors.remove(conn)
-            self.number -= 1  # #TODO: Whereelse is the number reduced?
-        except ValueError as err:
-            pass
+        self.number -= 1
 
         # TODO: need to redesign the counting method, connection to a proxy
         # will always success and then be lost when the actual client is down.

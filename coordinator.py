@@ -63,6 +63,7 @@ class Coordinator(DatagramProtocol):
         else:
             self.tor_point = None
 
+
     def parse_udp_msg(self, *msg):
         """
         Return (main_pw, sha1, num, port, ip, [certs_str or None]).
@@ -79,7 +80,8 @@ class Coordinator(DatagramProtocol):
                 ip_in_hex_form,
                 salt,
                 [cert1,
-                cert2   (only when ptproxy is enabled)]
+                cert2   (only when obfs4 is enabled)],
+                [some random string (only when meek is enabled)]
             )
         """
 
@@ -103,13 +105,13 @@ class Coordinator(DatagramProtocol):
             self.recentsalt.pop(0)
         self.recentsalt.append(msg[4])
 
-        if not self.obfs_level:
-            certs_str = None
-        else:
-            # ptproxy enabled
+        if 1 <= self.obfs_level <= 2:
+            # obfs4 enabled
             certs_original = msg[5] + msg[6]
             certs_original += '=' * ((160 - len(certs_original)) % 4)
             certs_str = urlsafe_b64_short_decode(certs_original)
+        else:
+            certs_str = None
 
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
 
@@ -138,7 +140,7 @@ class Coordinator(DatagramProtocol):
         Verify the identity of the client and assign a Control
         to it if it is trusted.
         """
-        logging.info("received DNS request from %s:%d" % (addr[0], addr[1]))
+        logging.debug("received DNS request from %s:%d" % (addr[0], addr[1]))
         try:
             dnsq = dnslib.DNSRecord.parse(data)
             query_data = str(dnsq.q.qname).split('.')
@@ -149,16 +151,11 @@ class Coordinator(DatagramProtocol):
 
         try:
             # One control corresponds to one client (with a unique SHA1)
-            if not self.obfs_level:
-                expected_len = 7
-            else:
-                expected_len = 9
 
-            if len(query_data) < expected_len:
-                raise CorruptedReq
+            # TODO: get obfs level from query length
 
             main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
-                self.parse_udp_msg(*query_data[:-2])
+                self.parse_udp_msg(*query_data[:6])
             if client_sha1 is None:
                 raise DuplicateError
             if client_sha1 not in self.controls:
