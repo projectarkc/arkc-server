@@ -40,7 +40,6 @@ class Coordinator(DatagramProtocol):
                  delegatedomain, selfdomain, pt_exec, obfs_level):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
-        self.meek_port = 55000
         self.pri = pri
         self.delegatedomain = delegatedomain
         self.selfdomain = selfdomain
@@ -64,13 +63,6 @@ class Coordinator(DatagramProtocol):
         else:
             self.tor_point = None
 
-        # create an endpoint of meek
-        if self.obfs_level == 3:
-            host = "127.0.0.1"
-            port = self.meek_port
-            self.meek_point = TCP4ClientEndpoint(reactor, host, port)
-        else:
-            self.meek_point = None
 
     def parse_udp_msg(self, *msg):
         """

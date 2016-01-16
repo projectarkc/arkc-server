@@ -3,6 +3,7 @@ from random import expovariate
 from utils import weighted_choice
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
+from txsocksx.client import SOCKS4ClientEndpoint as SOCKS4Point
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 import time
 import threading
@@ -50,7 +51,7 @@ class Control:
         self.initiator = initiator
         self.close_char = chr(4) * 5
         self.tor_point = self.initiator.tor_point
-        self.meek_point = self.initiator.meek_point
+        self.obfs_level = self.initiator.obfs_level
         self.client_pub = client_pub
         self.client_pri_sha1 = client_pri_sha1
         self.host = host
@@ -78,7 +79,7 @@ class Control:
 
         # ptproxy enabled
         # TODO: EDIT!!! Don't keep self.check, no longer needed
-        if self.certs_str or self.meek_point:
+        if self.certs_str or self.obfs_level == 3:
             self.ptproxy_local_port = random.randint(30000, 40000)
             while self.ptproxy_local_port in initiator.usedports:
                 self.ptproxy_local_port += 1
@@ -88,7 +89,7 @@ class Control:
             pt.setDaemon(True)
             self.check = threading.Event()
             pt.start()
-            self.check.wait(1000)
+            self.check.wait(3)
 
     def ptinit(self):
         atexit.register(exit_handler)
@@ -117,13 +118,13 @@ class Control:
             globals = {
                 "SERVER_string": self.host + ":" + str(self.port),
                 "ptexec": self.initiator.pt_exec +
-                " --url=http://127.0.0.1:8080/ --front=www.google.com",
+                " --url=https://arkc-reflector.appspot.com/ --front=www.google.com",
                 "localport": self.ptproxy_local_port,
                 "remoteaddress": self.host,
                 "remoteport": self.port
             }
-            self.host = "127.0.0.1"
-            self.port = self.ptproxy_local_port
+#             self.host = "127.0.0.1"
+#             self.port = self.ptproxy_local_port
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):
@@ -152,8 +153,11 @@ class Control:
             # connect through Tor if required, direct connection otherwise
             if self.tor_point:
                 point = SOCKS5Point(self.host, self.port, self.tor_point)
-            elif self.meek_point:
-                point = SOCKS5Point(self.host, self.port, self.meek_point)
+            elif self.obfs_level == 3:
+                host = "127.0.0.1"
+                port = self.ptproxy_local_port
+                meek_point = TCP4ClientEndpoint(reactor, host, port)
+                point = SOCKS4Point(self.host, self.port, meek_point)
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
 
