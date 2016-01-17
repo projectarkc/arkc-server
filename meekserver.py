@@ -1,30 +1,3 @@
-"""The MIT License (MIT)
-
-Copyright (c) 2015 Dingyuan Wang
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-
-
-import atexit
-
-
 import os
 import time
 import shlex
@@ -46,6 +19,8 @@ class PTConnectFailed(Exception):
 
 CFG = dict()
 LOCK = None
+PT_PROC = None
+PTREADY = threading.Event()
 
 TRANSPORT_VERSIONS = ('1',)
 
@@ -78,7 +53,7 @@ def checkproc():
 
 
 def parseptline(stdout):
-    global CFG
+    global CFG, init
     for ln in iter(stdout.readline, ''):
         ln = ln.decode('utf_8', errors='replace').rstrip('\n')
         sp = ln.split(' ', 1)
@@ -96,11 +71,11 @@ def parseptline(stdout):
             vals = sp[1].split(' ')
             if vals[0] == CFG['ptname']:
                 host, port = vals[2].split(':')
-                CFG['localport'] = port
+                init.ptproxy_local_port = port
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
-            LOCK.set()
+            init.check.set()
             return
         else:
             # Some PTs may print extra debugging info
@@ -128,23 +103,18 @@ def runpt():
         print(logtime(), 'PT died.')
 
 
-def meekinit(self, var):
-    global CFG, LOCK
+def meekinit(init, var):
+    global CFG, LOCK, initiator
     CFG = {
         "role": "client",
         "state": tempfile.gettempdir(),
-        "local": "127.0.0.1:" + str(var['localport']),
         "ptname": "meek",
         "ptserveropt": "",
         "ptargs": "",
         "ptproxy": "",
         "ptexec": var['ptexec']
     }
-
-    LOCK = var['LOCK']
-
-    PT_PROC = None
-    PTREADY = threading.Event()
+    initiator = init
 
     try:
         CFG['_run'] = True

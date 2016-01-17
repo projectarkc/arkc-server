@@ -104,7 +104,7 @@ class Control:
                 "LOCK": self.check
             }
             pt = threading.Thread(
-                target=meekinit, args=[meek_var])
+                target=meekinit, args=[self, meek_var])
             pt.setDaemon(True)
             pt.start()
             self.check.wait(100)
