@@ -21,6 +21,7 @@ CFG = dict()
 LOCK = None
 PT_PROC = None
 PTREADY = threading.Event()
+initator = None
 
 TRANSPORT_VERSIONS = ('1',)
 
@@ -71,11 +72,11 @@ def parseptline(stdout):
             vals = sp[1].split(' ')
             if vals[0] == CFG['ptname']:
                 host, port = vals[2].split(':')
-                init.ptproxy_local_port = port
+                initiator.ptproxy_local_port = port
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
-            init.check.set()
+            initiator.check.set()
             return
         else:
             # Some PTs may print extra debugging info

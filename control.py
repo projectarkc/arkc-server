@@ -154,7 +154,7 @@ class Control:
             elif self.obfs_level == 3:
                 meek_point = TCP4ClientEndpoint(
                     reactor, "127.0.0.1", self.ptproxy_local_port)
-                # print(self.port)
+                print(self.ptproxy_local_port)
                 point = SOCKS4Point(self.host, self.port, meek_point)
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
