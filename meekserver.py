@@ -72,7 +72,7 @@ def parseptline(stdout):
             vals = sp[1].split(' ')
             if vals[0] == CFG['ptname']:
                 host, port = vals[2].split(':')
-                initiator.ptproxy_local_port = port
+                initiator.ptproxy_local_port = int(port)
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')

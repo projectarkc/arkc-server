@@ -63,7 +63,6 @@ class Coordinator(DatagramProtocol):
         else:
             self.tor_point = None
 
-
     def parse_udp_msg(self, *msg):
         """
         Return (main_pw, sha1, num, port, ip, [certs_str or None]).
