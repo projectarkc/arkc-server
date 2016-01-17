@@ -33,12 +33,13 @@ class ClientConnector(Protocol):
         self.main_pw = self.initiator.main_pw
         # control characters
         # self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
-        self.split_char = chr(27) + chr(28) + "%X" % struct.unpack('B', self.main_pw[-2:-1])[0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
+        self.split_char = chr(27) + chr(28) + "%X" % struct.unpack('B', self.main_pw[-2:-1])[
+            0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
         self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = urandom(16)
         self.cipher = AESCipher(self.session_pw, self.main_pw)
-
+        self.authenticated = False
         self.buffer = ""
         self.writeindex = {}
 
@@ -91,13 +92,11 @@ class ClientConnector(Protocol):
             logging.debug("send ping2")
             self.transport.write(to_write)
 
-
     def connectionMade(self):
         """Event handler of being successfully connected to the client."""
         logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
         self.transport.write(self.generate_auth_msg())
-        self.ping_send()
 
     def dataReceived(self, recv_data):
         """Event handler of receiving some data from client.
@@ -105,7 +104,7 @@ class ClientConnector(Protocol):
         Split, decrypt and hand them back to Control.
         """
         logging.debug("received %d bytes from client " % len(recv_data) +
-                     addr_to_str(self.transport.getPeer()))
+                      addr_to_str(self.transport.getPeer()))
         self.buffer += recv_data
 
         # a list of encrypted data packages
@@ -118,19 +117,33 @@ class ClientConnector(Protocol):
             flag = int(text_dec[0])
             if flag == 0:
                 self.initiator.client_recv(text_dec[1:])
+            elif flag == 2:
+                if text_dec[1:] == "AUTHENTICATED":
+                    self.authenticated()
+                else:
+                    self.close()
             else:
                 # strip off type and seq (both are always 1)
                 self.ping_recv(text_dec[2:])
 
         self.buffer = recv[-1]  # incomplete message
 
+    def authenticated(self):
+        self.authenticated = True
+        self.ping_send()
+
+    def close(self):
+        logging.warning("Authentication failed" + addr_to_str(self.transport.getPeer()))
+        self.transport.close()
+
     def connectionLost(self, reason):
         """Event handler of losing the connection to the client.
 
         Call Control to handle it.
         """
-        logging.info("client connection lost: " +
-                     addr_to_str(self.transport.getPeer()))
+        if self.authenticated:
+            logging.info("client connection lost: " +
+                         )
         self.initiator.client_lost(self)
 
     def write(self, data, conn_id, index):
@@ -147,6 +160,7 @@ class ClientConnector(Protocol):
         to_write = self.cipher.encrypt("0" + conn_id + str(index) + data) +\
             self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
-                     addr_to_str(self.transport.getPeer()),
-                     conn_id))
+                                                                    addr_to_str(
+                                                                        self.transport.getPeer()),
+                                                                    conn_id))
         self.transport.write(to_write)

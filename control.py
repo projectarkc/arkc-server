@@ -17,6 +17,8 @@ from client import ClientConnector
 import atexit
 import psutil
 
+EXPIRE_TIME = 5
+
 
 def exit_handler():
 
@@ -180,13 +182,21 @@ class Control:
         Reset the connection after a random time for better performance.
         """
         self.retry_count = 0
-        self.client_connectors.append(conn)
-
-        # Reset the connection after a random time
-        expire_time = expovariate(1.0 / 60)
-        reactor.callLater(expire_time, self.client_reset, conn)
-
+        reactor.callLater(5, self.conn_check, conn)
+        # Recheck
         self.connect()
+
+    def conn_check(self, conn):
+        """Test whether a connection is authenticated"""
+        if conn:
+            if conn.authenticated:
+                # Reset the connection after a random time
+                expire_time = expovariate(1.0 / 60)
+                reactor.callLater(expire_time, self.client_reset, conn)
+                self.client_connectors.append(conn)
+            else:
+                conn.close()
+            # TODO: ADD to some black list?
 
     def new_proxy_conn(self, conn_id):
         """Create a connection to HTTP proxy corresponding to the given ID.
@@ -291,7 +301,7 @@ class Control:
 
         # TODO: need to redesign the counting method, connection to a proxy
         # will always success and then be lost when the actual client is down.
-        if self.certs_str is None and self.obfs_level==0:
+        if self.certs_str is None and self.obfs_level == 0:
             self.connect()
 
     def proxy_write(self, conn_id):
