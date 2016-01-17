@@ -119,7 +119,7 @@ class ClientConnector(Protocol):
                 self.initiator.client_recv(text_dec[1:])
             elif flag == 2:
                 if text_dec[1:] == "AUTHENTICATED":
-                    self.authenticated()
+                    self.authenticate_success()
                 else:
                     self.close()
             else:
@@ -128,14 +128,14 @@ class ClientConnector(Protocol):
 
         self.buffer = recv[-1]  # incomplete message
 
-    def authenticated(self):
+    def authenticate_success(self):
         self.authenticated = True
         self.ping_send()
 
     def close(self):
         logging.warning(
             "Authentication failed" + addr_to_str(self.transport.getPeer()))
-        self.transport.close()
+        self.transport.loseConnection()
 
     def connectionLost(self, reason):
         """Event handler of losing the connection to the client.
