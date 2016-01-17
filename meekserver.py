@@ -30,7 +30,7 @@ import SocketServer
 import threading
 import logging
 import tempfile
-from utils import socksocket, GeneralProxyError, ProxyConnectionError, ProxyError, PROXY_TYPES
+from utils import socksocket, GeneralProxyError, ProxyConnectionError, PROXY_TYPES
 
 try:
     DEVNULL = subprocess.DEVNULL
@@ -45,53 +45,6 @@ class PTConnectFailed(Exception):
     pass
 
 
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
-    allow_reuse_address = True
-
-
-# TODO: should it be deleted?
-class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
-
-    # def __init__(self, initiator):
-    #    self.initiator=initiator
-
-    def handle(self):
-        ptsock = socksocket()
-        ptsock.set_proxy(*CFG['_ptcli'])
-        host, port = CFG['server'].rsplit(':', 1)
-        try:
-            ptsock.connect((host, int(port)))
-            run = 1
-            while run:
-                rl, wl, xl = select.select([self.request, ptsock], [], [], 300)
-                if not rl:
-                    break
-                run = 0
-                for s in rl:
-                    try:
-                        data = s.recv(1024)
-                    except Exception as ex:
-                        print(logtime(), ex)
-                        continue
-                    if data:
-                        run += 1
-                    else:
-                        continue
-                    if s is self.request:
-                        ptsock.sendall(data)
-                    elif s is ptsock:
-                        self.request.sendall(data)
-        except GeneralProxyError as ex:
-            logging.warning(
-                logtime() + 'Proxy Error. Please check the config and the log of PT.')
-            self.request.close()
-        except SOCKS4Error as ex:
-            #logging.info(logtime() + 'SOCKS4 Error in PTproxy.')
-            self.request.close()
-        except ProxyConnectionError as ex:
-            logging.info(logtime() + 'Connection failed.')
-            self.request.close()
-
 CFG = {
     "role": "client",
     "state": tempfile.gettempdir(),
@@ -100,8 +53,6 @@ CFG = {
     "ptserveropt": "",
     "ptargs": ""
 }
-
-CFG["server"] = remoteaddress + ":" + str(remoteport)
 CFG["ptproxy"] = ""
 CFG["ptexec"] = ptexec
 
@@ -121,15 +72,6 @@ def ptenv():
         env['TOR_PT_CLIENT_TRANSPORTS'] = CFG['ptname']
         if CFG.get('ptproxy'):
             env['TOR_PT_PROXY'] = CFG['ptproxy']
-    elif CFG["role"] == "server":
-        env['TOR_PT_SERVER_TRANSPORTS'] = CFG['ptname']
-        env['TOR_PT_SERVER_BINDADDR'] = '%s-%s' % (
-            CFG['ptname'], CFG['server'])
-        env['TOR_PT_ORPORT'] = CFG['local']
-        env['TOR_PT_EXTENDED_SERVER_PORT'] = ''
-        if CFG.get('ptserveropt'):
-            env['TOR_PT_SERVER_TRANSPORT_OPTIONS'] = ';'.join(
-                '%s:%s' % (CFG['ptname'], kv) for kv in CFG['ptserveropt'].split(';'))
     else:
         raise ValueError('"role" must be either "server" or "client"')
     return env
@@ -163,9 +105,7 @@ def parseptline(stdout):
             vals = sp[1].split(' ')
             if vals[0] == CFG['ptname']:
                 host, port = vals[2].split(':')
-                CFG['_ptcli'] = (
-                    PROXY_TYPES[vals[1].upper()], host, int(port),
-                    True, CFG['ptargs'][:255], CFG['ptargs'][255:] or '\0')
+                localport = port
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
@@ -201,18 +141,7 @@ PTREADY = threading.Event()
 
 try:
     CFG['_run'] = True
-    if CFG['role'] == 'client':
-        ptthr = threading.Thread(target=runpt)
-        ptthr.daemon = True
-        ptthr.start()
-        PTREADY.wait()
-        host, port = CFG['local'].split(':')
-        # TODO: Don't need this TCP server, can handle it via txsocksx
-        server = ThreadedTCPServer(
-            (host, int(port)), ThreadedTCPRequestHandler)
-        server.serve_forever()
-    else:
-        runpt()
+    runpt()
 finally:
     CFG['_run'] = False
     if PT_PROC:

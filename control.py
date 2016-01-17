@@ -4,6 +4,7 @@ from utils import weighted_choice
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
+from txsocksx.client import SOCKS4ClientEndpoint as SOCKS4Point
 import time
 import threading
 import random
@@ -111,6 +112,7 @@ class Control:
             exec(code, globals)
 
     def meekinit(self):
+        self.ptproxy_local_port = None
         atexit.register(exit_handler)
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
         with open(path + os.sep + "meekserver.py") as f:
@@ -118,14 +120,12 @@ class Control:
             globals = {
                 "SERVER_string": self.host + ":" + str(self.port),
                 "ptexec": self.initiator.pt_exec +
-                " --url=https://arkc-reflector.appspot.com/ --front=www.google.com",
+                " --url=https://tonyyanga-arkc.appspot.com/",
                 "localport": self.ptproxy_local_port,
                 "remoteaddress": self.host,
-                "LOCK": self.check,
-                "remoteport": self.port
+                "remoteport": self.port,  # TODO: construct destinations
+                "LOCK": self.check
             }
-            self.host = "127.0.0.1"
-            self.port = self.ptproxy_local_port
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):
@@ -151,6 +151,11 @@ class Control:
             # connect through Tor if required, direct connection otherwise
             if self.tor_point:
                 point = SOCKS5Point(self.host, self.port, self.tor_point)
+            elif self.obfs_level == 3:
+                self.host = "127.0.0.1"
+                self.port = self.ptproxy_local_port
+                # print(self.port)
+                point = SOCKS4Point(self.host, self.port, self.tor_point)
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
 
