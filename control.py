@@ -152,10 +152,10 @@ class Control:
             if self.tor_point:
                 point = SOCKS5Point(self.host, self.port, self.tor_point)
             elif self.obfs_level == 3:
-                self.host = "127.0.0.1"
-                self.port = self.ptproxy_local_port
+                meek_point = TCP4ClientEndpoint(
+                    reactor, "127.0.0.1", self.ptproxy_local_port)
                 # print(self.port)
-                point = SOCKS4Point(self.host, self.port, self.tor_point)
+                point = SOCKS4Point(self.host, self.port, meek_point)
             else:
                 point = TCP4ClientEndpoint(reactor, self.host, self.port)
 
