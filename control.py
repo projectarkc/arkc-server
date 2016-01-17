@@ -93,6 +93,7 @@ class Control:
 
         if self.obfs_level == 3:
             self.ptproxy_local_port = None
+            self.check = threading.Event()
             meek_var = {
                 "SERVER_string": self.host + ":" + str(self.port),
                 "ptexec": self.initiator.pt_exec +
@@ -103,9 +104,8 @@ class Control:
                 "LOCK": self.check
             }
             pt = threading.Thread(
-                target=meekinit, args=meek_var)
+                target=meekinit, args=[meek_var])
             pt.setDaemon(True)
-            self.check = threading.Event()
             pt.start()
             self.check.wait(100)
 
