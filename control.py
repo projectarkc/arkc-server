@@ -14,10 +14,9 @@ import sys
 from proxy import ProxyConnector
 from utils import addr_to_str
 from client import ClientConnector
-
-import atexit
+from meekserver import meekinit
 import psutil
-
+import atexit
 EXPIRE_TIME = 5
 
 
@@ -80,13 +79,31 @@ class Control:
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
         # ptproxy enabled
-        if self.certs_str or self.obfs_level == 3:
+        if self.certs_str:
             self.ptproxy_local_port = random.randint(30000, 40000)
             while self.ptproxy_local_port in initiator.usedports:
                 self.ptproxy_local_port += 1
             initiator.usedports.append(self.ptproxy_local_port)
             pt = threading.Thread(
-                target=(self.ptinit if self.certs_str else self.meekinit))
+                target=self.ptinit)
+            pt.setDaemon(True)
+            self.check = threading.Event()
+            pt.start()
+            self.check.wait(100)
+
+        if self.obfs_level == 3:
+            self.ptproxy_local_port = None
+            meek_var = {
+                "SERVER_string": self.host + ":" + str(self.port),
+                "ptexec": self.initiator.pt_exec +
+                " --url=https://tonyyanga-arkc.appspot.com/",
+                "localport": self.ptproxy_local_port,
+                "remoteaddress": self.host,
+                "remoteport": self.port,  # TODO: construct destinations
+                "LOCK": self.check
+            }
+            pt = threading.Thread(
+                target=meekinit, args=meek_var)
             pt.setDaemon(True)
             self.check = threading.Event()
             pt.start()
@@ -109,23 +126,6 @@ class Control:
             }
             self.host = "127.0.0.1"
             self.port = self.ptproxy_local_port
-            exec(code, globals)
-
-    def meekinit(self):
-        self.ptproxy_local_port = None
-        atexit.register(exit_handler)
-        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
-        with open(path + os.sep + "meekserver.py") as f:
-            code = compile(f.read(), "meekserver.py", 'exec')
-            globals = {
-                "SERVER_string": self.host + ":" + str(self.port),
-                "ptexec": self.initiator.pt_exec +
-                " --url=https://tonyyanga-arkc.appspot.com/",
-                "localport": self.ptproxy_local_port,
-                "remoteaddress": self.host,
-                "remoteport": self.port,  # TODO: construct destinations
-                "LOCK": self.check
-            }
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):

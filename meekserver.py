@@ -21,16 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
+import atexit
+
+
 import os
 import time
 import shlex
-import select
 import subprocess
-import SocketServer
 import threading
-import logging
 import tempfile
-from utils import socksocket, GeneralProxyError, ProxyConnectionError, PROXY_TYPES
 
 try:
     DEVNULL = subprocess.DEVNULL
@@ -44,17 +44,8 @@ logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
 class PTConnectFailed(Exception):
     pass
 
-
-CFG = {
-    "role": "client",
-    "state": tempfile.gettempdir(),
-    "local": "127.0.0.1:" + str(localport),
-    "ptname": "meek",
-    "ptserveropt": "",
-    "ptargs": ""
-}
-CFG["ptproxy"] = ""
-CFG["ptexec"] = ptexec
+CFG = dict()
+LOCK = None
 
 TRANSPORT_VERSIONS = ('1',)
 
@@ -105,7 +96,7 @@ def parseptline(stdout):
             vals = sp[1].split(' ')
             if vals[0] == CFG['ptname']:
                 host, port = vals[2].split(':')
-                localport = port
+                CFG['localport'] = port
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
@@ -136,13 +127,29 @@ def runpt():
         PTREADY.clear()
         print(logtime(), 'PT died.')
 
-PT_PROC = None
-PTREADY = threading.Event()
 
-try:
-    CFG['_run'] = True
-    runpt()
-finally:
-    CFG['_run'] = False
-    if PT_PROC:
-        PT_PROC.kill()
+def meekinit(self, var):
+    global CFG, LOCK
+    CFG = {
+        "role": "client",
+        "state": tempfile.gettempdir(),
+        "local": "127.0.0.1:" + str(var['localport']),
+        "ptname": "meek",
+        "ptserveropt": "",
+        "ptargs": "",
+        "ptproxy": "",
+        "ptexec": var['ptexec']
+    }
+
+    LOCK = var['LOCK']
+
+    PT_PROC = None
+    PTREADY = threading.Event()
+
+    try:
+        CFG['_run'] = True
+        runpt()
+    finally:
+        CFG['_run'] = False
+        if PT_PROC:
+            PT_PROC.kill()
