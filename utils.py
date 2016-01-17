@@ -6,6 +6,12 @@ import base64
 import socket
 import SocketServer
 
+import struct
+from errno import EOPNOTSUPP, EINVAL, EAGAIN
+from io import BytesIO
+from os import SEEK_CUR
+from collections import Callable
+
 
 def addr_to_str(addr):
     """Convert a Twisted IAddress object to readable string."""
