@@ -77,7 +77,6 @@ class Control:
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
         # ptproxy enabled
-        # TODO: EDIT!!! Don't keep self.check, no longer needed
         if self.certs_str or self.obfs_level == 3:
             self.ptproxy_local_port = random.randint(30000, 40000)
             while self.ptproxy_local_port in initiator.usedports:
@@ -88,7 +87,7 @@ class Control:
             pt.setDaemon(True)
             self.check = threading.Event()
             pt.start()
-            self.check.wait(3)
+            self.check.wait(100)
 
     def ptinit(self):
         atexit.register(exit_handler)
@@ -120,6 +119,7 @@ class Control:
                 " --url=https://arkc-reflector.appspot.com/ --front=www.google.com",
                 "localport": self.ptproxy_local_port,
                 "remoteaddress": self.host,
+                "LOCK": self.check,
                 "remoteport": self.port
             }
             self.host = "127.0.0.1"
