@@ -133,7 +133,8 @@ class ClientConnector(Protocol):
         self.ping_send()
 
     def close(self):
-        logging.warning("Authentication failed" + addr_to_str(self.transport.getPeer()))
+        logging.warning(
+            "Authentication failed" + addr_to_str(self.transport.getPeer()))
         self.transport.close()
 
     def connectionLost(self, reason):
@@ -143,7 +144,7 @@ class ClientConnector(Protocol):
         """
         if self.authenticated:
             logging.info("client connection lost: " +
-                         )
+                         addr_to_str(self.transport.getPeer()))
         self.initiator.client_lost(self)
 
     def write(self, data, conn_id, index):
