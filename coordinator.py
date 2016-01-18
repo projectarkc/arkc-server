@@ -37,7 +37,7 @@ class Coordinator(DatagramProtocol):
     """
 
     def __init__(self, proxy_port, tor_port, pri, certs,
-                 delegatedomain, selfdomain, pt_exec, obfs_level):
+                 delegatedomain, selfdomain, pt_exec, obfs_level, meek_url):
         self.proxy_port = proxy_port
         self.tor_port = tor_port
         self.pri = pri
@@ -46,6 +46,7 @@ class Coordinator(DatagramProtocol):
         self.pt_exec = pt_exec
         self.obfs_level = obfs_level
         self.usedports = []
+        self.meek_url = meek_url
 
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs

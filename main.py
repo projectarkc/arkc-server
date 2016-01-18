@@ -58,8 +58,8 @@ if __name__ == "__main__":
         data = json.load(data_file)
         data_file.close()
     except Exception as err:
-        logging.error("Fatal error while loading configuration file.\n" +
-                      str(err))
+        logging.error("Fatal error while loading configuration file.")
+        print(err)  # TODO: improve error processing
         quit()
 
     try:
@@ -113,6 +113,9 @@ if __name__ == "__main__":
     if "obfs_level" not in data:
         data["obfs_level"] = 0
 
+    if "meek_url" not in data:
+        data["meek_url"] = "https://tonyyanga-arkc.appspot.com/"
+
     # Start the loop
     try:
         reactor.listenUDP(
@@ -125,7 +128,8 @@ if __name__ == "__main__":
                 data["delegated_domain"],
                 data["self_domain"],
                 data["pt_exec"],
-                data["obfs_level"]
+                data["obfs_level"],
+                data["meek_url"]
             )
         )
     except CannotListenError as err:

@@ -97,7 +97,7 @@ class Control:
             meek_var = {
                 "SERVER_string": self.host + ":" + str(self.port),
                 "ptexec": self.initiator.pt_exec +
-                " --url=https://tonyyanga-arkc.appspot.com/",
+                " --url=" + self.initiator.meek_url,
                 "localport": self.ptproxy_local_port,
                 "remoteaddress": self.host,
                 "remoteport": self.port,  # TODO: construct destinations
@@ -109,6 +109,7 @@ class Control:
             pt.start()
             self.check.wait(100)
 
+    # TODO: This pt is not working
     def ptinit(self):
         atexit.register(exit_handler)
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
@@ -137,6 +138,9 @@ class Control:
             else:
                 logging.error("pt mode does not allow client address change")
         self.req_num = req_num
+        if self.main_pw != main_pw:
+            self.main_pw = main_pw
+            logging.info("main password change")
 
     def connect(self):
         """Connect client."""
@@ -301,7 +305,7 @@ class Control:
         """
         if conn in self.client_connectors:
             self.client_connectors.remove(conn)
-        self.number -= 1
+            self.number -= 1
 
         # TODO: need to redesign the counting method, connection to a proxy
         # will always success and then be lost when the actual client is down.
