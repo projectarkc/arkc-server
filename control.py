@@ -309,7 +309,7 @@ class Control:
 
         # TODO: need to redesign the counting method, connection to a proxy
         # will always success and then be lost when the actual client is down.
-        if self.certs_str is None and self.obfs_level == 0:
+        if self.obfs_level == 0:
             self.connect()
 
     def proxy_write(self, conn_id):

@@ -42,7 +42,6 @@ class ClientConnector(Protocol):
         self.authenticated = False
         self.buffer = ""
         self.writeindex = {}
-
         self.latency = 10000
 
         self.cronjob = None
@@ -75,7 +74,7 @@ class ClientConnector(Protocol):
         """
         raw_packet = "1" + "0" + get_timestamp()
         to_write = self.cipher.encrypt(raw_packet) + self.split_char
-        if self.transport:
+        if self.authenticated:
             logging.debug("send ping0")
             self.transport.write(to_write)
             self.cronjob = reactor.callLater(PING_INTERVAL, self.ping_send)
@@ -145,6 +144,7 @@ class ClientConnector(Protocol):
         if self.authenticated:
             logging.info("client connection lost: " +
                          addr_to_str(self.transport.getPeer()))
+        self.authenticated = False
         self.initiator.client_lost(self)
 
     def write(self, data, conn_id, index):
