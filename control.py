@@ -95,13 +95,10 @@ class Control:
             self.ptproxy_local_port = None
             self.check = threading.Event()
             meek_var = {
-                "SERVER_string": self.host + ":" + str(self.port),
                 "ptexec": self.initiator.pt_exec +
                 " --url=" + self.initiator.meek_url +
-                " --dest=http://" + self.host + ":" + str(self.port) + "/",
+                " --desturl=http://" + self.host + ":" + str(self.port) + "/",
                 "localport": self.ptproxy_local_port,
-                "remoteaddress": self.host,
-                "remoteport": self.port,  # TODO: construct destinations
                 "LOCK": self.check
             }
             pt = threading.Thread(
