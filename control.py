@@ -293,7 +293,7 @@ class Control:
 
         May result in better performance.
         """
-        if conn.cronjob:
+        if conn.authenticated:
             conn.cronjob.cancel()
         self.client_lost(conn)
         conn.write(self.close_char, "00", 100)
