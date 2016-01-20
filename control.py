@@ -202,6 +202,7 @@ class Control:
                 self.client_connectors.append(conn)
             else:
                 conn.close()
+                self.number -= 1
             # TODO: ADD to some black list?
 
     def new_proxy_conn(self, conn_id):
@@ -294,7 +295,10 @@ class Control:
         if conn.authenticated:
             conn.cronjob.cancel()
         self.client_lost(conn)
-        conn.write(self.close_char, "00", 100)
+        if self.obfs_lelve != 3:
+            conn.write(self.close_char, "00", 100)
+        else:
+            conn.close()
 
     def client_lost(self, conn):
         """Triggered by a ClientConnector's connectionLost method.
