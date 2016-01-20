@@ -233,9 +233,10 @@ class Control:
         logging.info("deleting connection id " + conn_id)
         try:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
-            assert self.proxy_connectors.pop(conn_id, None) is not None
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
+            assert conn_id in self.proxy_connectors
+            self.proxy_connectors.pop(conn_id).transport.loseConnection()
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
 
@@ -261,8 +262,11 @@ class Control:
         else:
             if conn_id not in self.proxy_connectors:
                 self.new_proxy_conn(conn_id)
-            self.proxy_write_queues[conn_id][index] = data
-            self.proxy_write(conn_id)
+                self.proxy_write_queues[conn_id][index] = data
+                # proxy_write called later
+            else:
+                self.proxy_write_queues[conn_id][index] = data
+                self.proxy_write(conn_id)
 
     def client_write(self, data, conn_id):
         """Pick a client connector and write the data.
@@ -343,6 +347,7 @@ class Control:
                 len(data))
             logging.error("related proxy connection closing")
             self.proxy_lost(conn_id)
+        # TODO: Are all proxy connections closed correctly? Keep-alive ones?
 
     def proxy_lost(self, conn_id):
         """Deal with the situation when proxy connection is lost unexpectedly.
