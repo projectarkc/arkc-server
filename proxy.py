@@ -4,6 +4,7 @@ from twisted.internet.protocol import Protocol
 
 from utils import addr_to_str
 
+
 class ProxyConnector(Protocol):
     """Handle a single connection to the HTTP proxy.
     Initiated by a ClientConnector (passed as self.initiator).
@@ -17,7 +18,7 @@ class ProxyConnector(Protocol):
         self.write_queue = deque()
 
         # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
-        self.segment_size = 4083
+        self.segment_size = 4096
 
         # set as True when self.transport becomes None,
         # but self.connectionLost() is not triggered
@@ -33,7 +34,7 @@ class ProxyConnector(Protocol):
         Will cut them into segments and call self.respond() to write them.
         """
         logging.debug("received %d bytes from proxy with id %s" %
-                     (len(response), self.conn_id))
+                      (len(response), self.conn_id))
         self.buffer += response
         while self.buffer:
             self.write_queue.append(self.buffer[:self.segment_size])
