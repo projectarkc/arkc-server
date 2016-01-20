@@ -199,11 +199,13 @@ class Control:
                 # Reset the connection after a random time
                 expire_time = expovariate(1.0 / 60)
                 reactor.callLater(expire_time, self.client_reset, conn)
-                self.client_connectors.append(conn)
             else:
                 conn.close()
                 self.number -= 1
             # TODO: ADD to some black list?
+
+    def add(self, conn):
+        self.client_connectors.append(conn)
 
     def new_proxy_conn(self, conn_id):
         """Create a connection to HTTP proxy corresponding to the given ID.
@@ -295,7 +297,7 @@ class Control:
         if conn.authenticated:
             conn.cronjob.cancel()
         self.client_lost(conn)
-        if self.obfs_lelve != 3:
+        if self.obfs_level != 3:
             conn.write(self.close_char, "00", 100)
         else:
             conn.close()

@@ -129,6 +129,7 @@ class ClientConnector(Protocol):
 
     def authenticate_success(self):
         self.authenticated = True
+        self.initiator.add(self)
         self.ping_send()
 
     def close(self):
