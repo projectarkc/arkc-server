@@ -102,8 +102,10 @@ class ClientConnector(Protocol):
 
         Split, decrypt and hand them back to Control.
         """
-        logging.debug("received %d bytes from client " % len(recv_data) +
-                      addr_to_str(self.transport.getPeer()))
+        # Avoid repetition caused by ping
+        # logging.debug("received %d bytes from client " % len(recv_data) +
+        #              addr_to_str(self.transport.getPeer()))
+
         self.buffer += recv_data
 
         # a list of encrypted data packages

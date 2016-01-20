@@ -245,7 +245,8 @@ class Control:
         Should be decrypted by ClientConnector first.
         """
         conn_id, index, data = recv[:2], int(recv[2:5]), recv[5:]
-
+        logging.debug("received %d bytes from client key " % len(data) +
+                      conn_id)
         if data == self.close_char:
             # close connection and remove the ID
             if conn_id in self.proxy_connectors:
@@ -260,10 +261,8 @@ class Control:
         else:
             if conn_id not in self.proxy_connectors:
                 self.new_proxy_conn(conn_id)
-                self.proxy_write_queues[conn_id][index] = data
-            else:
-                self.proxy_write_queues[conn_id][index] = data
-                self.proxy_write(conn_id)
+            self.proxy_write_queues[conn_id][index] = data
+            self.proxy_write(conn_id)
 
     def client_write(self, data, conn_id):
         """Pick a client connector and write the data.
@@ -340,7 +339,8 @@ class Control:
             self.client_write(data, conn_id)
         except AssertionError:
             logging.error(
-                "%i dumped from proxy for no connections with the client")
+                "%i dumped from proxy for no connections with the client" %
+                len(data))
             logging.error("related proxy connection closing")
             self.proxy_lost(conn_id)
 
