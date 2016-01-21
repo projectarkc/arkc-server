@@ -236,7 +236,8 @@ class Control:
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
             assert conn_id in self.proxy_connectors
-            self.proxy_connectors.pop(conn_id).transport.loseConnection()
+            if self.proxy_connectors.pop(conn_id).transport:
+                self.proxy_connectors.pop(conn_id).transport.loseConnection()
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
 
@@ -252,13 +253,12 @@ class Control:
             # close connection and remove the ID
             if conn_id in self.proxy_connectors:
                 conn = self.proxy_connectors[conn_id]
-                if not conn.transport:
+                if conn.transport is None:
                     self.proxy_lost(conn_id)
                 else:
                     conn.transport.loseConnection()
             else:
-                logging.warning("closing non-existing connection")
-
+                logging.debug("closing non-existing connection")
         else:
             if conn_id not in self.proxy_connectors:
                 self.new_proxy_conn(conn_id)
