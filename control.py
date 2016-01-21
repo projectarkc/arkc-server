@@ -236,7 +236,7 @@ class Control:
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
             assert conn_id in self.proxy_connectors
-            if self.proxy_connectors.pop(conn_id).transport:
+            if self.proxy_connectors[conn_id].transport:
                 self.proxy_connectors.pop(conn_id).transport.loseConnection()
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)

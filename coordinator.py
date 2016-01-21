@@ -127,7 +127,7 @@ class Coordinator(DatagramProtocol):
                 rdata=dnslib.SOA(
                     self.selfdomain,
                     "webmaster." + self.selfdomain,
-                    (20150101, 3600, 3600, 3600, 3600)
+                    (20130101, 3600, 3600, 3600, 3600)
                 )
             )
         )
