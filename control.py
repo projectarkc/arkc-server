@@ -284,6 +284,7 @@ class Control:
             # TODO: better algorithm
             f = lambda c: 1.0 / (c.latency ** 2 + 1)
             conn = weighted_choice(self.client_connectors, f)
+            conn.latency += 100
             conn.write(data, conn_id, self.client_write_queues_index[conn_id])
             self.client_write_queues_index[conn_id] += 1
             if self.client_write_queues_index[conn_id] == 1000:

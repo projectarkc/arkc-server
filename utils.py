@@ -39,6 +39,8 @@ def weighted_choice(l, f_weight):
     i = bisect.bisect(breakpoints, r)
     return l[i]
 
+# TODO: introduce reset strategy
+
 
 class AESCipher:
     """A reusable wrapper of PyCrypto's AES cipher, i.e. resets every time."""
