@@ -50,8 +50,8 @@ class Control:
     def __init__(self, initiator, client_pub, client_pri_sha1, host, port,
                  main_pw, req_num, certs_str=None):
         self.initiator = initiator
+        self.socksproxy = self.initiator.socksproxy
         self.close_char = chr(4) * 5
-        self.tor_point = self.initiator.tor_point
         self.obfs_level = self.initiator.obfs_level
         self.client_pub = client_pub
         self.client_pri_sha1 = client_pri_sha1
@@ -151,8 +151,11 @@ class Control:
             connector = ClientConnector(self)
 
             # connect through Tor if required, direct connection otherwise
-            if self.tor_point:
-                point = SOCKS5Point(self.host, self.port, self.tor_point)
+            if self.socksproxy:
+                proxy = random.choice(self.socksproxy)
+                # Further settings and check
+                socks_point = TCP4ClientEndpoint(reactor, proxy[0], proxy[1])
+                point = SOCKS5Point(self.host, self.port, socks_point)
             elif self.obfs_level == 3:
                 meek_point = TCP4ClientEndpoint(
                     reactor, "127.0.0.1", self.ptproxy_local_port)

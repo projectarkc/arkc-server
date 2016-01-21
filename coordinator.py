@@ -36,10 +36,10 @@ class Coordinator(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-    def __init__(self, proxy_port, tor_port, pri, certs,
+    def __init__(self, proxy_port, socksproxy, pri, certs,
                  delegatedomain, selfdomain, pt_exec, obfs_level, meek_url):
         self.proxy_port = proxy_port
-        self.tor_port = tor_port
+        self.socksproxy = socksproxy
         self.pri = pri
         self.delegatedomain = delegatedomain
         self.selfdomain = selfdomain
@@ -55,14 +55,6 @@ class Coordinator(DatagramProtocol):
         self.controls = dict()
 
         self.recentsalt = []
-
-        # Create an endpoint of Tor
-        if self.tor_port:
-            host = "127.0.0.1"
-            port = self.tor_port
-            self.tor_point = TCP4ClientEndpoint(reactor, host, port)
-        else:
-            self.tor_point = None
 
     def parse_udp_msg(self, *msg):
         """
@@ -172,8 +164,6 @@ class Coordinator(DatagramProtocol):
 
         except CorruptedReq:
             logging.info("Corrupt request")
-        except DuplicateError:
-            pass  # TODO:should mimic DNS server
         except KeyError:
             logging.error("untrusted client")
         except AssertionError:

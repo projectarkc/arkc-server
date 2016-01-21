@@ -101,6 +101,9 @@ if __name__ == "__main__":
     if "udp_port" not in data:
         data["udp_port"] = 53
 
+    if "socks_proxy" not in data:
+        data["socks_proxy"] = None
+
     if "delegated_domain" not in data:
         data["delegated_domain"] = "testing.arkc.org"
 
@@ -122,7 +125,7 @@ if __name__ == "__main__":
             data["udp_port"],
             Coordinator(
                 data["proxy_port"],
-                None,
+                data["socks_proxy"],
                 local_cert,
                 certs,
                 data["delegated_domain"],
