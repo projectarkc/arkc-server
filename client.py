@@ -143,7 +143,7 @@ class ClientConnector(Protocol):
             logging.warning(
                 "Authentication failed" + addr_to_str(self.transport.getPeer()))
         else:
-            if self.cronjob:
+            if not(self.cronjob.cancelled):
                 self.cronjob.cancel()
         self.transport.loseConnection()
 

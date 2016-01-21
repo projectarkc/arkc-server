@@ -239,8 +239,9 @@ class Control:
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
             assert conn_id in self.proxy_connectors
-            if self.proxy_connectors[conn_id].transport:
-                self.proxy_connectors.pop(conn_id).transport.loseConnection()
+            tp = self.proxy_connectors.pop(conn_id).transport
+            if tp:
+                tp.loseConnection()
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
 
@@ -341,6 +342,8 @@ class Control:
                         addr_to_str(conn.transport.getPeer()),
                         conn_id))
                     conn.transport.write(data)
+        if self.proxy_write_queues_index[conn_id] + 6 in self.proxy_write_queues[conn_id]:
+            self.proxy_connectors[conn_id].transport.loseConnection()
 
     def proxy_recv(self, data, conn_id):
         """Call client_write on receiving data from proxy."""
