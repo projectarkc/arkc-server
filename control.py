@@ -255,6 +255,7 @@ class Control:
         if data == self.close_char:
             # close connection and remove the ID
             if conn_id in self.proxy_connectors:
+                logging.debug("close message from client key" + conn_id)
                 conn = self.proxy_connectors[conn_id]
                 if conn.transport is None:
                     self.proxy_lost(conn_id)

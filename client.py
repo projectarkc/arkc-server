@@ -11,6 +11,7 @@ from utils import addr_to_str
 from utils import get_timestamp, parse_timestamp
 
 PING_INTERVAL = 10
+RESET_INTERVAL = 2
 
 
 class ClientConnector(Protocol):
@@ -45,6 +46,7 @@ class ClientConnector(Protocol):
         self.latency = 10000
 
         self.cronjob = None
+        self.cancel_job = None
 
     def generate_auth_msg(self):
         """Generate encrypted message.
@@ -75,20 +77,22 @@ class ClientConnector(Protocol):
         raw_packet = "1" + "0" + get_timestamp()
         to_write = self.cipher.encrypt(raw_packet) + self.split_char
         if self.authenticated:
-            logging.debug("send ping0")
+            #logging.debug("send ping0")
             self.transport.write(to_write)
             self.cronjob = reactor.callLater(PING_INTERVAL, self.ping_send)
+            self.cancel_job = reactor.callLater(RESET_INTERVAL, self.close())
 
     def ping_recv(self, msg):
         """Parse ping 1 (without flag & seq) and send ping 2."""
-        logging.debug("recv ping1")
+        #logging.debug("recv ping1")
+        self.cancel_job.cancel()
         time0 = parse_timestamp(msg[:11])
         self.latency = int(time() * 1000) - time0
         logging.debug("latency: %dms" % self.latency)
         raw_packet = "1" + "2" + msg[11:]
         to_write = self.cipher.encrypt(raw_packet) + self.split_char
         if self.transport:
-            logging.debug("send ping2")
+            #logging.debug("send ping2")
             self.transport.write(to_write)
 
     def connectionMade(self):
@@ -135,8 +139,12 @@ class ClientConnector(Protocol):
         self.ping_send()
 
     def close(self):
-        logging.warning(
-            "Authentication failed" + addr_to_str(self.transport.getPeer()))
+        if not self.authenticated:
+            logging.warning(
+                "Authentication failed" + addr_to_str(self.transport.getPeer()))
+        else:
+            if self.cronjob:
+                self.cronjob.cancel()
         self.transport.loseConnection()
 
     def connectionLost(self, reason):
