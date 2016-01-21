@@ -256,7 +256,7 @@ class Control:
         if data == self.close_char:
             # close connection and remove the ID
             if conn_id in self.proxy_connectors:
-                logging.debug("close message from client key" + conn_id)
+                logging.debug("close message from client key " + conn_id)
                 conn = self.proxy_connectors[conn_id]
                 if conn.transport is None:
                     self.proxy_lost(conn_id)
@@ -279,9 +279,8 @@ class Control:
         """
 
         i = 0
-        while i <= 5 and len(self.client_connectors) == 0:
-            time.sleep(0.02)
-            i += 1
+        if len(self.client_connectors) == 0:
+            pass  # TODO: reload coordinator
         assert len(self.client_connectors) != 0
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
@@ -344,8 +343,9 @@ class Control:
                         addr_to_str(conn.transport.getPeer()),
                         conn_id))
                     conn.transport.write(data)
-        if self.proxy_write_queues_index[conn_id] + 6 in self.proxy_write_queues[conn_id]:
-            self.proxy_connectors[conn_id].transport.loseConnection()
+        if self.proxy_write_queues_index[conn_id] + 10 in self.proxy_write_queues[conn_id]:
+            logging.warning("lost frame in connection " + conn_id)
+            # self.proxy_connectors[conn_id].transport.loseConnection()
 
     def proxy_recv(self, data, conn_id):
         """Call client_write on receiving data from proxy."""
