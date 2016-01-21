@@ -306,9 +306,11 @@ class Control:
         if conn.authenticated:
             conn.cronjob.cancel()
         self.client_lost(conn)
-        if self.obfs_level != 3:
-            conn.write(self.close_char, "00", 100)
-        else:
+        conn.write(self.close_char, "00", 100)
+        reactor.callLater(0.1, self.client_reset_exec, conn)
+
+    def client_reset_exec(self, conn):
+        if conn:
             conn.close()
 
     def client_lost(self, conn):

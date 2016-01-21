@@ -80,7 +80,7 @@ class ClientConnector(Protocol):
             #logging.debug("send ping0")
             self.transport.write(to_write)
             self.cronjob = reactor.callLater(PING_INTERVAL, self.ping_send)
-            self.cancel_job = reactor.callLater(RESET_INTERVAL, self.close())
+            self.cancel_job = reactor.callLater(RESET_INTERVAL, self.close)
 
     def ping_recv(self, msg):
         """Parse ping 1 (without flag & seq) and send ping 2."""
