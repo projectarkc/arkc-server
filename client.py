@@ -42,7 +42,7 @@ class ClientConnector(Protocol):
         self.authenticated = False
         self.buffer = ""
         self.latency = 10000
-
+        self.idchar = initiator.register()
         self.cronjob = None
         self.cancel_job = None
 
@@ -51,12 +51,12 @@ class ClientConnector(Protocol):
 
         The message is in the form
             server_sign(main_pw) (HEX) +
-            client_pub(session_pw)
-        Total length is 512 + 256 = 768 bytes
+            client_pub(session_pw) + id
+        Total length is 512 + 256 + 2 = 770 bytes
         """
         hex_sign = '%X' % self.pri.sign(self.main_pw, None)[0]
         pw_enc = self.client_pub.encrypt(self.session_pw, None)[0]
-        return hex_sign + pw_enc
+        return hex_sign + pw_enc + self.idchar
 
     def ping_send(self):
         """Send the initial ping message to the client at a certain interval.
@@ -122,7 +122,7 @@ class ClientConnector(Protocol):
             if flag == 0:
                 self.initiator.client_recv(text_dec[1:])
             elif flag == 2:
-                if text_dec[1:] == "AUTHENTICATED":
+                if text_dec[1:] == "AUTHENTICATED" + self.idchar:
                     self.authenticate_success()
                 else:
                     self.close()
@@ -167,7 +167,7 @@ class ClientConnector(Protocol):
             data
         """
 
-        to_write = self.cipher.encrypt("0" + conn_id + str(index) + data) +\
+        to_write = self.cipher.encrypt("0" + conn_id + index + data) +\
             self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
                                                                     addr_to_str(

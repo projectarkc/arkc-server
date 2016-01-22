@@ -66,6 +66,7 @@ class Control:
         self.swap_count = 0
         self.preferred_conn = None
         self.client_connectors = []
+        self.used_id = []
 
         # maps ID to decrypted data segments
         self.proxy_write_queues = dict()
@@ -110,6 +111,17 @@ class Control:
             pt.setDaemon(True)
             pt.start()
             self.check.wait(100)
+
+        reactor.callLater(1, self.broadcast)
+
+    def broadcast(self):
+        if len(self.client_connectors) > 0:
+            str_send = ''
+            for i in self.used_id:
+                str_send = i + ','
+            str_send.lstrip(',')
+            self.client_write(str_send, '00', '050')
+        reactor.callLater(1, self.broadcast)
 
     # TODO: This pt is not working
     def ptinit(self):
@@ -217,7 +229,7 @@ class Control:
                 self.number -= 1
             # TODO: ADD to some black list?
 
-    def add(self, conn):
+    def add_cli(self, conn):
         self.client_connectors.append(conn)
 
     def new_proxy_conn(self, conn_id):
@@ -256,6 +268,8 @@ class Control:
                 tp.loseConnection()
         except AssertionError:
             logging.warning("deleting non-existing key %s" % conn_id)
+        except KeyError:
+            pass
 
     def client_recv(self, recv):
         """Handle request from client.
@@ -326,7 +340,7 @@ class Control:
                 data, conn_id, index)
         else:
             self.preferred_conn.write(
-                data, conn_id, self.client_write_queues_index[conn_id])
+                data, conn_id, str(self.client_write_queues_index[conn_id]))
             self.client_write_buffer[conn_id][
                 self.client_write_queues_index[conn_id]] = data
             self.client_write_queues_index[conn_id] += 1
@@ -361,10 +375,11 @@ class Control:
 
     def register(self):
         cli_id = None
-        while (cli_id is None) or (cli_id in self.clientreceivers) or (cli_id == "00"):
+        while (cli_id is None) or (cli_id in self.used_id) or (cli_id == "00"):
             a = list(string.ascii_letters)
             random.shuffle(a)
             cli_id = ''.join(a[:2])
+        self.used_id.append(cli_id)
         return cli_id
 
     def proxy_write(self, conn_id):
