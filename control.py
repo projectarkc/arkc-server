@@ -303,7 +303,7 @@ class Control:
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
             self.client_recved_queues_index[conn_id] = 100
-            self.client_write_buffer = dict()
+            self.client_write_buffer[conn_id] = dict()
         if self.swap_count <= 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
             f = lambda c: 1.0 / (c.latency ** 2 + 1)
@@ -315,7 +315,7 @@ class Control:
         self.preferred_conn.write(
             data, conn_id, self.client_write_queues_index[conn_id])
         self.client_write_buffer[conn_id][
-            self.client_write_queues_index] = data
+            self.client_write_queues_index[conn_id]] = data
         self.client_write_queues_index[conn_id] += 1
         if self.client_write_queues_index[conn_id] == 1000:
             self.client_write_queues_index[conn_id] = 100
