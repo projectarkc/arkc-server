@@ -118,9 +118,9 @@ class Control:
         if len(self.client_connectors) > 0:
             str_send = ''
             for i in self.used_id:
-                str_send = i + ','
-            str_send.lstrip(',')
-            self.client_write(str_send, '00', '050')
+                str_send += i + ','
+            str_send.rstrip(',')
+            #self.client_write(str_send, '00', '050')
         reactor.callLater(1, self.broadcast)
 
     # TODO: This pt is not working
@@ -308,13 +308,16 @@ class Control:
             except KeyError:
                 pass
         else:
-            if conn_id not in self.proxy_connectors:
-                self.new_proxy_conn(conn_id)
-                self.proxy_write_queues[conn_id][index] = data
-                # proxy_write called later
-            else:
-                self.proxy_write_queues[conn_id][index] = data
-                self.proxy_write(conn_id)
+            try:
+                if conn_id not in self.proxy_connectors:
+                    self.new_proxy_conn(conn_id)
+                    self.proxy_write_queues[conn_id][index] = data
+                    # proxy_write called later
+                else:
+                    self.proxy_write_queues[conn_id][index] = data
+                    self.proxy_write(conn_id)
+            except KeyError:
+                self.client_write(self.close_char, conn_id, "100")
 
     def client_write(self, data, conn_id, index=None):
         """Pick a client connector and write the data.
