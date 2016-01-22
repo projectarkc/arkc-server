@@ -221,7 +221,7 @@ class Control:
                     expire_time = expovariate(1.0 / 60)
                     reactor.callLater(expire_time, self.client_reset, conn)
             else:
-                conn.write(self.close_char, "00", 100)
+                conn.write(self.close_char, "00", "100")
                 if self.obfs_level == 3:
                     reactor.callLater(1, conn.close)
                 else:
@@ -353,7 +353,7 @@ class Control:
         May result in better performance.
         """
         self.client_lost(conn)
-        conn.write(self.close_char, "00", 100)
+        conn.write(self.close_char, "00", "100")
         conn.authenticated = False
         reactor.callLater(0.1, self.client_reset_exec, conn)
 

@@ -135,7 +135,7 @@ class ClientConnector(Protocol):
     def authenticate_success(self):
         self.authenticated = True
         logging.debug("Authentication confirm string received.")
-        self.initiator.add(self)
+        self.initiator.add_cli(self)
         self.ping_send()
 
     def close(self):
