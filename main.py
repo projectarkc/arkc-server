@@ -3,6 +3,7 @@
 import logging
 import argparse
 import json
+import sys
 from Crypto.PublicKey import RSA
 from hashlib import sha1
 from twisted.internet import reactor

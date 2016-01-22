@@ -5,12 +5,11 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 from time import time
 import struct
-
+import random
 from utils import AESCipher
 from utils import addr_to_str
 from utils import get_timestamp, parse_timestamp
 
-PING_INTERVAL = 10
 RESET_INTERVAL = 2
 
 
@@ -78,7 +77,8 @@ class ClientConnector(Protocol):
         if self.authenticated:
             #logging.debug("send ping0")
             self.transport.write(to_write)
-            self.cronjob = reactor.callLater(PING_INTERVAL, self.ping_send)
+            interval = random.randint(500, 1500) / 100
+            self.cronjob = reactor.callLater(interval, self.ping_send)
             self.cancel_job = reactor.callLater(RESET_INTERVAL, self.close)
 
     def ping_recv(self, msg):
