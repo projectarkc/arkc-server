@@ -5,7 +5,6 @@ from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol
 from txsocksx.client import SOCKS5ClientEndpoint as SOCKS5Point
 from txsocksx.client import SOCKS4ClientEndpoint as SOCKS4Point
-import time
 import threading
 import random
 import os
@@ -284,11 +283,14 @@ class Control:
             pass  # TODO: reload coordinator
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
-        if self.swap_count == 0 or not self.preferred_conn.authenticated:
+        if self.swap_count <= 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
             f = lambda c: 1.0 / (c.latency ** 2 + 1)
             self.preferred_conn = weighted_choice(self.client_connectors, f)
             self.preferred_conn.latency += 100
+            self.swap_count = 8
+        else:
+            self.swap_count -= 1
         self.preferred_conn.write(
             data, conn_id, self.client_write_queues_index[conn_id])
         self.client_write_queues_index[conn_id] += 1
@@ -308,8 +310,10 @@ class Control:
         reactor.callLater(0.1, self.client_reset_exec, conn)
 
     def client_reset_exec(self, conn):
-        if conn:
+        try:
             conn.close()
+        except Exception:
+            pass
 
     def client_lost(self, conn):
         """Triggered by a ClientConnector's connectionLost method.
@@ -319,11 +323,7 @@ class Control:
         if conn in self.client_connectors:
             self.client_connectors.remove(conn)
             self.number -= 1
-
-        # TODO: need to redesign the counting method, connection to a proxy
-        # will always success and then be lost when the actual client is down.
-        if self.obfs_level == 0:
-            self.connect()
+        self.connect()
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
