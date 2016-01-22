@@ -210,7 +210,10 @@ class Control:
                     reactor.callLater(expire_time, self.client_reset, conn)
             else:
                 conn.write(self.close_char, "00", 100)
-                conn.close()
+                if self.obfs_level == 3:
+                    reactor.callLater(1, conn.close)
+                else:
+                    conn.close()
                 self.number -= 1
             # TODO: ADD to some black list?
 
@@ -245,8 +248,8 @@ class Control:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
-            self.client_write_queues_index.remove(conn_id)
-            self.client_write_buffer.remove(conn)
+            self.client_write_queues_index.pop(conn_id)
+            self.client_write_buffer.pop(conn_id)
             assert conn_id in self.proxy_connectors
             tp = self.proxy_connectors.pop(conn_id).transport
             if tp:
@@ -286,7 +289,7 @@ class Control:
             data = int(data)
             try:
                 for i in range(self.client_recved_queues_index[conn_id], data - 1):
-                    self.client_write_buffer[conn_id].remove(i)
+                    self.client_write_buffer[conn_id].pop(i)
                 self.client_recved_queues_index[conn_id] = data
             except KeyError:
                 pass
