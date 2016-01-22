@@ -8,6 +8,7 @@ from txsocksx.client import SOCKS4ClientEndpoint as SOCKS4Point
 import threading
 import random
 import os
+import string
 import sys
 
 from proxy import ProxyConnector
@@ -202,10 +203,13 @@ class Control:
         """Test whether a connection is authenticated"""
         if conn:
             if conn.authenticated:
-                # Reset the connection after a random time
-                expire_time = expovariate(1.0 / 60)
-                reactor.callLater(expire_time, self.client_reset, conn)
+                # Reset the connection after a random time, no need if using
+                # timeout enforced by GAE
+                if self.obfs_level <= 3:
+                    expire_time = expovariate(1.0 / 60)
+                    reactor.callLater(expire_time, self.client_reset, conn)
             else:
+                conn.write(self.close_char, "00", 100)
                 conn.close()
                 self.number -= 1
             # TODO: ADD to some black list?
@@ -241,6 +245,8 @@ class Control:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
+            self.client_write_queues_index.remove(conn_id)
+            self.client_write_buffer.remove(conn)
             assert conn_id in self.proxy_connectors
             tp = self.proxy_connectors.pop(conn_id).transport
             if tp:
@@ -280,7 +286,7 @@ class Control:
             data = int(data)
             try:
                 for i in range(self.client_recved_queues_index[conn_id], data - 1):
-                    self.client_write_buffer[conn_id].pop(i)
+                    self.client_write_buffer[conn_id].remove(i)
                 self.client_recved_queues_index[conn_id] = data
             except KeyError:
                 pass
@@ -349,6 +355,14 @@ class Control:
             self.client_connectors.remove(conn)
             self.number -= 1
         self.connect()
+
+    def register(self):
+        cli_id = None
+        while (cli_id is None) or (cli_id in self.clientreceivers) or (cli_id == "00"):
+            a = list(string.ascii_letters)
+            random.shuffle(a)
+            cli_id = ''.join(a[:2])
+        return cli_id
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
