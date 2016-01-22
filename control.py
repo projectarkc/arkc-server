@@ -270,8 +270,8 @@ class Control:
         elif index == 20:
             try:
                 while data:
-                    self.client_write(self.client_write_buffer[conn_id][int(data[:3])].
-                                      conn_id)
+                    self.client_write(self.client_write_buffer[conn_id][int(data[:3])],
+                                      conn_id, data[:3])
                     data = data[3:]
             except KeyError:
                 pass
@@ -293,7 +293,7 @@ class Control:
                 self.proxy_write_queues[conn_id][index] = data
                 self.proxy_write(conn_id)
 
-    def client_write(self, data, conn_id):
+    def client_write(self, data, conn_id, index=None):
         """Pick a client connector and write the data.
         Triggered by proxy_recv or proxy_finish.
         """
@@ -312,13 +312,17 @@ class Control:
             self.swap_count = 8
         else:
             self.swap_count -= 1
-        self.preferred_conn.write(
-            data, conn_id, self.client_write_queues_index[conn_id])
-        self.client_write_buffer[conn_id][
-            self.client_write_queues_index[conn_id]] = data
-        self.client_write_queues_index[conn_id] += 1
-        if self.client_write_queues_index[conn_id] == 1000:
-            self.client_write_queues_index[conn_id] = 100
+        if index:
+            self.preferred_conn.write(
+                data, conn_id, index)
+        else:
+            self.preferred_conn.write(
+                data, conn_id, self.client_write_queues_index[conn_id])
+            self.client_write_buffer[conn_id][
+                self.client_write_queues_index[conn_id]] = data
+            self.client_write_queues_index[conn_id] += 1
+            if self.client_write_queues_index[conn_id] == 1000:
+                self.client_write_queues_index[conn_id] = 100
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
