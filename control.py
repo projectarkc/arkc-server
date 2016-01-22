@@ -70,7 +70,9 @@ class Control:
         self.proxy_write_queues = dict()
         self.proxy_write_queues_index = dict()
 
+        self.client_recved_queues_index = dict()
         self.client_write_queues_index = dict()
+        self.client_write_buffer = dict()
 
         # maps ID to ProxyConnectors
         self.proxy_connectors = dict()
@@ -265,6 +267,23 @@ class Control:
                     conn.transport.loseConnection()
             else:
                 logging.debug("closing non-existing connection")
+        elif index == 20:
+            try:
+                while data:
+                    self.client_write(self.client_write_buffer[conn_id][int(data[:3])].
+                                      conn_id)
+                    data = data[3:]
+            except KeyError:
+                pass
+            logging.debug("Retransmission request from client " + conn_id)
+        elif index == 30:
+            data = int(data)
+            try:
+                for i in range(self.client_recved_queues_index[conn_id], data - 1):
+                    self.client_write_buffer[conn_id].pop(i)
+                self.client_recved_queues_index[conn_id] = data
+            except KeyError:
+                pass
         else:
             if conn_id not in self.proxy_connectors:
                 self.new_proxy_conn(conn_id)
@@ -283,6 +302,8 @@ class Control:
             pass  # TODO: reload coordinator
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
+            self.client_recved_queues_index[conn_id] = 100
+            self.client_write_buffer = dict()
         if self.swap_count <= 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
             f = lambda c: 1.0 / (c.latency ** 2 + 1)
@@ -293,6 +314,8 @@ class Control:
             self.swap_count -= 1
         self.preferred_conn.write(
             data, conn_id, self.client_write_queues_index[conn_id])
+        self.client_write_buffer[conn_id][
+            self.client_write_queues_index] = data
         self.client_write_queues_index[conn_id] += 1
         if self.client_write_queues_index[conn_id] == 1000:
             self.client_write_queues_index[conn_id] = 100
@@ -302,8 +325,6 @@ class Control:
 
         May result in better performance.
         """
-        if conn.authenticated:
-            conn.cronjob.cancel()
         self.client_lost(conn)
         conn.write(self.close_char, "00", 100)
         conn.authenticated = False
