@@ -10,8 +10,6 @@ from utils import AESCipher
 from utils import addr_to_str
 from utils import get_timestamp, parse_timestamp
 
-RESET_INTERVAL = 2
-
 
 class ClientConnector(Protocol):
     """Handle one connection to a client.
@@ -78,6 +76,10 @@ class ClientConnector(Protocol):
             #logging.debug("send ping0")
             self.transport.write(to_write)
             interval = random.randint(500, 1500) / 100
+            if self.initiator.obfs_level == 3:
+                RESET_INTERVAL = 5
+            else:
+                RESET_INTERVAL = 2
             self.cronjob = reactor.callLater(interval, self.ping_send)
             self.cancel_job = reactor.callLater(RESET_INTERVAL, self.close)
 

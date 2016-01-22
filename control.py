@@ -369,6 +369,7 @@ class Control:
         Remove the closed connection and retry creating it.
         """
         if conn in self.client_connectors:
+            self.used_id.remove(conn.idchar)
             self.client_connectors.remove(conn)
             self.number -= 1
         self.connect()
