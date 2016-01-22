@@ -85,10 +85,10 @@ if __name__ == "__main__":
         quit()
 
     if args.verbose:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
     if args.vv:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
     if not args.use_external_proxy:
         if "proxy_port" not in data:
