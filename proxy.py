@@ -55,6 +55,6 @@ class ProxyConnector(Protocol):
         """Send all data to Control.
         Pass the segments one by one to Control's proxy_recv method.
         """
-        while self.write_queue:
+        while self.write_queue:  # TODO: YIELD
             write_buffer = self.write_queue.popleft()
             self.initiator.proxy_recv(write_buffer, self.conn_id)

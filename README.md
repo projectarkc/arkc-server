@@ -47,12 +47,12 @@ For a full list of settings:
 | ----------------------|:------------------------:| --------------------:|
 | udp_port              | int, udp listening port  | (0.0.0.0:)53       |
 | proxy_port            | int, local/ext proxy port| 8100(local)/8123(ext)|
-| tor_port              | int, tor socks port      | 0 (Unused)           |
 | local_cert_path       | str, path of server pri  | REQUIRED             |
 | clients       | list, (path of client pub, sha1 of client pri) pairs  | REQUIRED             |
 | pt_exec		| str, command line of pluggable transport executable | "obfs4proxy" |
 | obfs_level		| integer, obfs level 0~3 | 0 |
 | meek_url   | str, URL of meek's GAE destination| "https://arkc-reflect.appspot.com/"|
+| socks_proxy | list, (host, port)      | None (Unused)           |
 
 Note: if obfs_level is set to a non-zero value, obfs4_exec must be appropriate set. Obfs4 will use an IAT mode of (obfs_level - 1), which means if obfs_level is set to 2 or 3, the connection speed may be affected.
 

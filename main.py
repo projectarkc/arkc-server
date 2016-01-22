@@ -117,7 +117,7 @@ if __name__ == "__main__":
         data["obfs_level"] = 0
 
     if "meek_url" not in data:
-        data["meek_url"] = "https://tonyyanga-arkc.appspot.com/"
+        data["meek_url"] = "https://arkc.appspot.com/"
 
     # Start the loop
     try:

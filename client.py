@@ -42,7 +42,6 @@ class ClientConnector(Protocol):
         self.cipher = AESCipher(self.session_pw, self.main_pw)
         self.authenticated = False
         self.buffer = ""
-        self.writeindex = {}
         self.latency = 10000
 
         self.cronjob = None
@@ -135,16 +134,15 @@ class ClientConnector(Protocol):
 
     def authenticate_success(self):
         self.authenticated = True
+        logging.debug("Authentication confirm string received.")
         self.initiator.add(self)
         self.ping_send()
 
     def close(self):
-        if not self.authenticated:
-            logging.warning(
-                "Authentication failed" + addr_to_str(self.transport.getPeer()))
-        else:
-            if not(self.cronjob.cancelled):
-                self.cronjob.cancel()
+        try:
+            self.cronjob.cancel()
+        except Exception:
+            pass
         self.transport.loseConnection()
 
     def connectionLost(self, reason):

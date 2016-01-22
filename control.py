@@ -63,6 +63,8 @@ class Control:
         self.number = 0
         self.max_retry = 5
         self.retry_count = 0
+        self.swap_count = 0
+        self.preferred_conn = None
         self.client_connectors = []
 
         # maps ID to decrypted data segments
@@ -278,24 +280,20 @@ class Control:
         Triggered by proxy_recv or proxy_finish.
         """
 
-        i = 0
         if len(self.client_connectors) == 0:
             pass  # TODO: reload coordinator
-        assert len(self.client_connectors) != 0
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100
-        if len(self.client_connectors) > 0:
+        if self.swap_count == 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
             f = lambda c: 1.0 / (c.latency ** 2 + 1)
-            conn = weighted_choice(self.client_connectors, f)
-            conn.latency += 100
-            conn.write(data, conn_id, self.client_write_queues_index[conn_id])
-            self.client_write_queues_index[conn_id] += 1
-            if self.client_write_queues_index[conn_id] == 1000:
-                self.client_write_queues_index[conn_id] = 100
-        else:
-            logging.error(
-                "no client_connectiors available, %i dumped." % len(data))
+            self.preferred_conn = weighted_choice(self.client_connectors, f)
+            self.preferred_conn.latency += 100
+        self.preferred_conn.write(
+            data, conn_id, self.client_write_queues_index[conn_id])
+        self.client_write_queues_index[conn_id] += 1
+        if self.client_write_queues_index[conn_id] == 1000:
+            self.client_write_queues_index[conn_id] = 100
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
@@ -306,6 +304,7 @@ class Control:
             conn.cronjob.cancel()
         self.client_lost(conn)
         conn.write(self.close_char, "00", 100)
+        conn.authenticated = False
         reactor.callLater(0.1, self.client_reset_exec, conn)
 
     def client_reset_exec(self, conn):
@@ -343,8 +342,9 @@ class Control:
                         addr_to_str(conn.transport.getPeer()),
                         conn_id))
                     conn.transport.write(data)
-        if self.proxy_write_queues_index[conn_id] + 10 in self.proxy_write_queues[conn_id]:
-            logging.warning("lost frame in connection " + conn_id)
+        if self.proxy_write_queues_index[conn_id] + 7 in self.proxy_write_queues[conn_id]:
+            logging.debug("lost frame in connection " + conn_id)
+            # TODO: Retransmission
             # self.proxy_connectors[conn_id].transport.loseConnection()
 
     def proxy_recv(self, data, conn_id):
