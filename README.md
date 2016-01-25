@@ -66,7 +66,7 @@ File ptclient.py is based on ptproxy by Dingyuan Wang. Code reused and edited un
 
 ##License
 
-Copyright 2015 ArkC contributers
+Copyright 2015 ArkC Technology.
 
 The ArkC-client and ArkC-server utilities are licensed under GNU GPLv2. You should obtain a copy of the license with the software.
 

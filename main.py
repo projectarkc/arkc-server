@@ -143,4 +143,7 @@ if __name__ == "__main__":
             print("root privilege may be required to listen to low ports")
         exit()
 
-    reactor.run()
+    try:
+        reactor.run()
+    except KeyboardInterrupt:
+        pass
