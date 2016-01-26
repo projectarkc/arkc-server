@@ -45,6 +45,10 @@ if __name__ == "__main__":
                         help="use an external HTTPS proxy server running locally,\
                         e.g. polipo, for better performance.\
                         Fall back to in-built python proxy server otherwise.")
+    print(
+        """ArkC Server V0.1.2, by ArkC Technology.
+The programs is distributed under GNU General Public License Version 2.
+""")
 
     args = parser.parse_args()
 
@@ -85,11 +89,15 @@ if __name__ == "__main__":
         print (err)
         quit()
 
-    if args.verbose:
-        logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-
     if args.vv:
-        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
+                            format="%(levelname)s: %(asctime)s; %(message)s")
+    elif args.verbose:
+        logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                            format="%(levelname)s: %(asctime)s; %(message)s")
+    else:
+        logging.basicConfig(stream=sys.stdout, level=logging.WARNING,
+                            format="%(levelname)s: %(asctime)s; %(message)s")
 
     if not args.use_external_proxy:
         if "proxy_port" not in data:
