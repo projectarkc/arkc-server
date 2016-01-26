@@ -83,7 +83,7 @@ class Control:
         host, port = "127.0.0.1", self.initiator.proxy_port
         self.proxy_point = TCP4ClientEndpoint(reactor, host, port)
 
-        # ptproxy enabled
+        # ptproxy (obfs4)
         if self.certs_str:
             self.ptproxy_local_port = random.randint(30000, 40000)
             while self.ptproxy_local_port in initiator.usedports:
@@ -96,6 +96,7 @@ class Control:
             pt.start()
             self.check.wait(100)
 
+        # meek (GAE) init
         if self.obfs_level == 3:
             self.ptproxy_local_port = None
             self.check = threading.Event()
@@ -115,12 +116,14 @@ class Control:
         reactor.callLater(1, self.broadcast)
 
     def broadcast(self):
+        # (Experimental function) tell the client what connections are valid
         if len(self.client_connectors) > 0:
             str_send = ''
             for i in self.used_id:
                 str_send += i + ','
             str_send.rstrip(',')
-            #self.client_write(str_send, '00', '050')
+            # self.client_write(str_send, '00', '050') # TODO: disabled
+            # experimental function
         reactor.callLater(1, self.broadcast)
 
     # TODO: This pt is not working
@@ -144,6 +147,8 @@ class Control:
             exec(code, globals)
 
     def update(self, host, port, main_pw, req_num):
+        # Update the info in control object, called when different data come in
+        # by new requests
         if self.original_host != host or self.original_port != port:
             if not self.obfs_level:
                 self.original_host = self.host = host
@@ -204,7 +209,7 @@ class Control:
         Reset retry count and continue adding connections until the required
         available connection number (specified by client through UDP message)
         is reached.
-        Reset the connection after a random time for better performance.
+        Check authentication process later
         """
         self.retry_count = 0
         reactor.callLater(5, self.conn_check, conn)
@@ -212,7 +217,9 @@ class Control:
         self.connect()
 
     def conn_check(self, conn):
-        """Test whether a connection is authenticated"""
+        """Test whether a connection is authenticated, if so, 
+        Reset the connection after a random time for better performance.
+        """
         if conn:
             if conn.authenticated:
                 # Reset the connection after a random time, no need if using

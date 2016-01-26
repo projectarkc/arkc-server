@@ -141,6 +141,7 @@ class ClientConnector(Protocol):
         self.ping_send()
 
     def close(self):
+        '''a secure way to abort the connection'''
         try:
             self.cronjob.cancel()
         except Exception:
