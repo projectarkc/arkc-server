@@ -76,6 +76,8 @@ class Control:
         self.client_write_queues_index = dict()
         self.client_write_buffer = dict()
 
+        self.max_index = dict()
+
         # maps ID to ProxyConnectors
         self.proxy_connectors = dict()
 
@@ -265,10 +267,14 @@ class Control:
         logging.info("deleting connection id " + conn_id)
         try:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
+            assert self.proxy_write_queues_index.pop(conn_id, None) is not None
             assert self.client_write_queues_index.pop(
                 conn_id, None) is not None
             self.client_write_queues_index.pop(conn_id)
             self.client_write_buffer.pop(conn_id)
+
+            assert self.max_index.pop(conn_id, None) is not None
+
             assert conn_id in self.proxy_connectors
             tp = self.proxy_connectors.pop(conn_id).transport
             if tp:
@@ -312,6 +318,8 @@ class Control:
                 for i in range(self.client_recved_queues_index[conn_id], data - 1):
                     self.client_write_buffer[conn_id].pop(i)
                 self.client_recved_queues_index[conn_id] = data
+                if conn_id in self.max_index and data == self.max_index[conn_id]:
+                    self.proxy_finish_exec(conn_id)
             except KeyError:
                 pass
         else:
@@ -444,9 +452,17 @@ class Control:
         self.proxy_finish(conn_id)
 
     def proxy_finish(self, conn_id):
-        """Write all pending response data to client and remove ID.
+        """Record the max index.
 
         Called when proxy connection is lost.
+        """
+        self.max_index[conn_id] = self.client_write_queues_index[conn_id] - 1
+
+
+    def proxy_finish_exec(self, conn_id):
+        """Write all pending response data to client and remove ID.
+
+        Called when client has received all data.
         """
         if len(self.client_connectors) != 0:
             self.client_write(self.close_char, conn_id)
