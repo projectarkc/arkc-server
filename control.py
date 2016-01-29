@@ -300,9 +300,9 @@ class Control:
         elif index == 20:
             try:
                 while data:
-                    self.client_write(self.client_write_buffer[conn_id][int(data[:3])],
-                                      conn_id, data[:3])
-                    data = data[3:]
+                    self.client_write(self.client_write_buffer[conn_id][int(data[:6])],
+                                      conn_id, data[:6])
+                    data = data[6:]
             except KeyError:
                 pass
             logging.debug("Retransmission request from client " + conn_id)
