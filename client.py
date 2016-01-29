@@ -166,7 +166,7 @@ class ClientConnector(Protocol):
         Raw packet structure:
             type    (1 byte)   (0 for normal data packet)
             id      (2 bytes)
-            index   (3 bytes)
+            index   (4 bytes)
             data
         """
 
