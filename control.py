@@ -335,6 +335,7 @@ class Control:
             if self.retry_count < self.max_retry:
                 logging.warning("no available socket")
                 return reactor.callLater(1, lambda: self.client_write(data, conn_id, index))
+            return
             # TODO: reload coordinator
         if conn_id not in self.client_write_queues_index:
             self.client_write_queues_index[conn_id] = 100000
