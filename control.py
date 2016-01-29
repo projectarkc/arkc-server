@@ -217,7 +217,7 @@ class Control:
         self.connect()
 
     def conn_check(self, conn):
-        """Test whether a connection is authenticated, if so, 
+        """Test whether a connection is authenticated, if so,
         Reset the connection after a random time for better performance.
         """
         if conn:
@@ -228,7 +228,7 @@ class Control:
                     expire_time = expovariate(1.0 / 60)
                     reactor.callLater(expire_time, self.client_reset, conn)
             else:
-                conn.write(self.close_char, "00", "1000")
+                conn.write(self.close_char, "00", "100000")
                 if self.obfs_level == 3:
                     reactor.callLater(1, conn.close)
                 else:
@@ -248,7 +248,7 @@ class Control:
         try:
             assert conn_id not in self.proxy_write_queues
             self.proxy_write_queues[conn_id] = dict()
-            self.proxy_write_queues_index[conn_id] = 1000
+            self.proxy_write_queues_index[conn_id] = 100000
             self.proxy_connectors[conn_id] = ProxyConnector(self, conn_id)
             point, connector = self.proxy_point, self.proxy_connectors[conn_id]
             d = connectProtocol(point, connector)
@@ -283,7 +283,7 @@ class Control:
 
         Should be decrypted by ClientConnector first.
         """
-        conn_id, index, data = recv[:2], int(recv[2:6]), recv[6:]
+        conn_id, index, data = recv[:2], int(recv[2:8]), recv[8:]
         logging.debug("received %d bytes from client key " % len(data) +
                       conn_id)
         if data == self.close_char:
@@ -324,7 +324,7 @@ class Control:
                     self.proxy_write_queues[conn_id][index] = data
                     self.proxy_write(conn_id)
             except KeyError:
-                self.client_write(self.close_char, conn_id, "1000")
+                self.client_write(self.close_char, conn_id, "100000")
 
     def client_write(self, data, conn_id, index=None):
         """Pick a client connector and write the data.
@@ -337,8 +337,8 @@ class Control:
                 return reactor.callLater(1, lambda: self.client_write(data, conn_id, index))
             # TODO: reload coordinator
         if conn_id not in self.client_write_queues_index:
-            self.client_write_queues_index[conn_id] = 1000
-            self.client_recved_queues_index[conn_id] = 1000
+            self.client_write_queues_index[conn_id] = 100000
+            self.client_recved_queues_index[conn_id] = 100000
             self.client_write_buffer[conn_id] = dict()
         if self.swap_count <= 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
@@ -357,8 +357,8 @@ class Control:
             self.client_write_buffer[conn_id][
                 self.client_write_queues_index[conn_id]] = data
             self.client_write_queues_index[conn_id] += 1
-            if self.client_write_queues_index[conn_id] == 10000:
-                self.client_write_queues_index[conn_id] = 1000
+            if self.client_write_queues_index[conn_id] == 1000000:
+                self.client_write_queues_index[conn_id] = 100000
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
@@ -366,7 +366,7 @@ class Control:
         May result in better performance.
         """
         self.client_lost(conn)
-        conn.write(self.close_char, "00", "1000")
+        conn.write(self.close_char, "00", "100000")
         conn.authenticated = False
         reactor.callLater(0.1, self.client_reset_exec, conn)
 
@@ -453,5 +453,5 @@ class Control:
 
     def next_write_index(self, conn_id):
         self.proxy_write_queues_index[conn_id] += 1
-        if self.proxy_write_queues_index[conn_id] == 10000:
-            self.proxy_write_queues_index[conn_id] = 1000
+        if self.proxy_write_queues_index[conn_id] == 1000000:
+            self.proxy_write_queues_index[conn_id] = 100000
