@@ -226,7 +226,7 @@ class Control:
             if conn.authenticated:
                 # Reset the connection after a random time, no need if using
                 # timeout enforced by GAE
-                if self.obfs_level <= 3:
+                if self.obfs_level < 3:
                     expire_time = expovariate(1.0 / 60)
                     reactor.callLater(expire_time, self.client_reset, conn)
             else:
