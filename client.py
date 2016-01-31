@@ -40,7 +40,8 @@ class ClientConnector(Protocol):
         self.authenticated = False
         self.buffer = ""
         self.latency = 10000
-        self.idchar = initiator.register()
+        self.i = initiator.register()
+        self.idchar = (str(self.i) if 10 <= self.i <= 99 else '0' + str(self.i))
         self.cronjob = None
         self.cancel_job = None
 
@@ -119,13 +120,16 @@ class ClientConnector(Protocol):
         # leave the last (may be incomplete) item intact
         for text_enc in recv[:-1]:
             text_dec = self.cipher.decrypt(text_enc)
-            # flag is 0 for normal data packet, 1 for ping packet
+            # flag is 0 for normal data packet, 1 for ping packet, 2 for auth
             flag = int(text_dec[0])
             if flag == 0:
                 self.initiator.client_recv(text_dec[1:])
             elif flag == 2:
-                if text_dec[1:] == "AUTHENTICATED" + self.idchar:
+                auth_str = "AUTHENTICATED" + self.idchar
+                if text_dec[1:].startswith(auth_str):
+                    max_recved_idx = eval(text_dec[1:].lstrip(auth_str))
                     self.authenticate_success()
+                    self.initiator.update_max_idx(self, max_recved_idx)
                 else:
                     self.close()
             else:
@@ -146,6 +150,7 @@ class ClientConnector(Protocol):
             self.cronjob.cancel()
         except Exception:
             pass
+        # self.initiator.remove_cli(self)
         self.transport.loseConnection()
 
     def connectionLost(self, reason):
@@ -170,7 +175,7 @@ class ClientConnector(Protocol):
             data
         """
 
-        to_write = self.cipher.encrypt("0" + conn_id + index + data) +\
+        to_write = self.cipher.encrypt("0" + conn_id + str(index) + data) +\
             self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
                                                                     addr_to_str(

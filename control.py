@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 from random import expovariate
 from utils import weighted_choice
 from twisted.internet import reactor
@@ -60,23 +61,27 @@ class Control:
         self.main_pw = main_pw
         self.req_num = req_num
         self.certs_str = certs_str
-        self.number = 0
+        # self.number = 0
         self.max_retry = 5
         self.retry_count = 0
         self.swap_count = 0
         self.preferred_conn = None
-        self.client_connectors = []
-        self.used_id = []
+        self.client_connectors = [None] * req_num
+        # self.used_id = []
 
         # maps ID to decrypted data segments
         self.proxy_write_queues = dict()
         self.proxy_write_queues_index = dict()
 
-        self.client_recved_queues_index = dict()
-        self.client_write_queues_index = dict()
-        self.client_write_buffer = dict()
+#         self.client_recved_queues_index = dict()
+        self.client_global_idx = dict()
+        # self.client_write_buffer = dict()
 
         self.max_index = dict()
+
+        # each entry is a dict: conn_id -> queue
+        # a queue is formed by (index, data) pairs in order
+        self.client_buf = [{}] * req_num
 
         # maps ID to ProxyConnectors
         self.proxy_connectors = dict()
@@ -115,11 +120,12 @@ class Control:
             pt.start()
             self.check.wait(100)
 
-        reactor.callLater(1, self.broadcast)
+        # reactor.callLater(1, self.broadcast)
 
     def broadcast(self):
         # (Experimental function) tell the client what connections are valid
-        if len(self.client_connectors) > 0:
+        # TODO: update this method
+        if not all(_ is None for _ in self.client_connectors):
             str_send = ''
             for i in self.used_id:
                 str_send += i + ','
@@ -158,18 +164,20 @@ class Control:
                 logging.info("client address change")
             else:
                 logging.error("pt mode does not allow client address change")
-        self.req_num = req_num
+        # self.req_num = req_num
+        # TODO: update req_num
         if self.main_pw != main_pw:
             self.main_pw = main_pw
             logging.info("main password change")
 
     def connect(self):
         """Connect client."""
-        if self.number < self.req_num:
+        # if self.number < self.req_num:
+        if any(_ is None for _ in self.client_connectors):
 
             # pre-add the available connection count
             # will be decremented if failure occurs
-            self.number += 1
+            # self.number += 1
 
             connector = ClientConnector(self)
 
@@ -198,7 +206,7 @@ class Control:
         (which is pre-added when trying to connect),
         and retry until the max retry count is reached.
         """
-        self.number -= 1
+        # self.number -= 1
         if self.retry_count < self.max_retry:
             host, port = self.host, self.port
             logging.warning("retry connection to %s:%d" % (host, port))
@@ -228,6 +236,7 @@ class Control:
                 # timeout enforced by GAE
                 if self.obfs_level < 3:
                     expire_time = expovariate(1.0 / 60)
+                    # expire_time = 1.0
                     reactor.callLater(expire_time, self.client_reset, conn)
             else:
                 conn.write(self.close_char, "00", "100000")
@@ -235,11 +244,38 @@ class Control:
                     reactor.callLater(1, conn.close)
                 else:
                     conn.close()
-                self.number -= 1
+                # self.number -= 1
             # TODO: ADD to some black list?
 
     def add_cli(self, conn):
-        self.client_connectors.append(conn)
+#         for i in range(self.req_num):
+            # if self.client_connectors[i] is None:
+#                 self.client_connectors[i] = conn
+
+        assert self.client_connectors[conn.i] == 1  # pending for auth
+        self.client_connectors[conn.i] = conn
+
+    def remove_cli(self, conn):
+        """Reset the state of a slot when authentication fails."""
+        assert self.client_connectors[conn.i] == 1  # pending for auth
+        self.client_connectors[conn.i] = None
+
+    def update_max_idx(self, cc, max_recved_idx):
+        """Remove completed buffer and retransmit the remaining."""
+        i = self.client_connectors.index(cc)
+        buf = self.client_buf[i]
+        for cli_id in max_recved_idx:
+            queue = buf[cli_id]
+            while len(queue) and queue[0][0] <= max_recved_idx[cli_id]:
+                queue.popleft()
+            if len(queue):
+                # retransmit
+                for idx, data in queue:
+                    self.client_write(data, cli_id, idx)
+            else:
+                if max_recved_idx[cli_id] == self.max_index.get(cli_id, None):
+                    # completed, remove id
+                    self.del_proxy_conn(cli_id)
 
     def new_proxy_conn(self, conn_id):
         """Create a connection to HTTP proxy corresponding to the given ID.
@@ -268,12 +304,15 @@ class Control:
         try:
             assert self.proxy_write_queues.pop(conn_id, None) is not None
             assert self.proxy_write_queues_index.pop(conn_id, None) is not None
-            assert self.client_write_queues_index.pop(
-                conn_id, None) is not None
-            self.client_write_queues_index.pop(conn_id)
-            self.client_write_buffer.pop(conn_id)
+#             assert self.client_write_queues_index.pop(
+                # conn_id, None) is not None
+            # self.client_write_queues_index.pop(conn_id)
+#             self.client_write_buffer.pop(conn_id)
 
-            assert self.max_index.pop(conn_id, None) is not None
+            for i in range(self.req_num):
+                self.client_buf[i].pop(conn_id, None)
+            self.client_global_idx.pop(conn_id, None)
+            self.max_index.pop(conn_id, None)
 
             assert conn_id in self.proxy_connectors
             tp = self.proxy_connectors.pop(conn_id).transport
@@ -298,30 +337,34 @@ class Control:
                 logging.debug("close message from client key " + conn_id)
                 conn = self.proxy_connectors[conn_id]
                 if conn.transport is None:
+                    # TODO: update this method
                     self.proxy_lost(conn_id)
                 else:
                     conn.transport.loseConnection()
             else:
                 logging.debug("closing non-existing connection")
         elif index == 20:
-            try:
-                while data:
-                    self.client_write(self.client_write_buffer[conn_id][int(data[:6])],
-                                      conn_id, data[:6])
-                    data = data[6:]
-            except KeyError:
-                pass
-            logging.debug("Retransmission request from client " + conn_id)
+           #  try:
+                # while data:
+                    # self.client_write(self.client_write_buffer[conn_id][int(data[:6])],
+                                      # conn_id, data[:6])
+                    # data = data[6:]
+            # except KeyError:
+                # pass
+           #  logging.debug("Retransmission request from client " + conn_id)
+
+           pass # retransmission no longer needed
         elif index == 30:
-            data = int(data)
-            try:
-                for i in range(self.client_recved_queues_index[conn_id], data - 1):
-                    self.client_write_buffer[conn_id].pop(i)
-                self.client_recved_queues_index[conn_id] = data
-                if conn_id in self.max_index and data == self.max_index[conn_id]:
-                    self.proxy_finish_exec(conn_id)
-            except KeyError:
-                pass
+            # data = int(data)
+            # try:
+                # for i in range(self.client_recved_queues_index[conn_id], data - 1):
+                    # self.client_write_buffer[conn_id].pop(i)
+                # self.client_recved_queues_index[conn_id] = data
+                # if conn_id in self.max_index and data == self.max_index[conn_id]:
+                    # self.proxy_finish_exec(conn_id)
+            # except KeyError:
+            #     pass
+            pass # confirm no longer needed
         else:
             try:
                 if conn_id not in self.proxy_connectors:
@@ -339,35 +382,40 @@ class Control:
         Triggered by proxy_recv or proxy_finish.
         """
 
-        if len(self.client_connectors) == 0:
+        conns_avail = filter(lambda _: _ not in (None, 1), self.client_connectors)
+        if not len(conns_avail):
             if self.retry_count < self.max_retry:
                 logging.warning("no available socket")
                 return reactor.callLater(1, lambda: self.client_write(data, conn_id, index))
             return
             # TODO: reload coordinator
-        if conn_id not in self.client_write_queues_index:
-            self.client_write_queues_index[conn_id] = 100000
-            self.client_recved_queues_index[conn_id] = 100000
-            self.client_write_buffer[conn_id] = dict()
+        if conn_id not in self.client_global_idx:
+            self.client_global_idx[conn_id] = 100000
+            # self.client_recved_queues_index[conn_id] = 100000
+            # self.client_write_buffer[conn_id] = dict()
         if self.swap_count <= 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
             f = lambda c: 1.0 / (c.latency ** 2 + 1)
-            self.preferred_conn = weighted_choice(self.client_connectors, f)
+            self.preferred_conn = weighted_choice(conns_avail, f)
             self.preferred_conn.latency += 100
             self.swap_count = 8
         else:
             self.swap_count -= 1
         if index:
-            self.preferred_conn.write(
-                data, conn_id, index)
+            self.preferred_conn.write(data, conn_id, index)
         else:
-            self.preferred_conn.write(
-                data, conn_id, str(self.client_write_queues_index[conn_id]))
-            self.client_write_buffer[conn_id][
-                self.client_write_queues_index[conn_id]] = data
-            self.client_write_queues_index[conn_id] += 1
-            if self.client_write_queues_index[conn_id] == 1000000:
-                self.client_write_queues_index[conn_id] = 100000
+            idx = self.client_global_idx[conn_id]
+            self.preferred_conn.write(data, conn_id, str(idx))
+            # self.client_write_buffer[conn_id][
+            #     self.client_write_queues_index[conn_id]] = data
+            i = self.client_connectors.index(self.preferred_conn)
+            if conn_id not in self.client_buf[i]:
+                self.client_buf[i][conn_id] = deque()
+            self.client_buf[i][conn_id].append((idx, data))
+            self.client_global_idx[conn_id] += 1
+            if self.client_global_idx[conn_id] == 1000000:
+                # TODO: raise exception / cut connection
+                self.client_global_idx[conn_id] = 100000
 
     def client_reset(self, conn):
         """Called after a random time to reset a existing connection to client.
@@ -391,19 +439,25 @@ class Control:
         Remove the closed connection and retry creating it.
         """
         if conn in self.client_connectors:
-            self.used_id.remove(conn.idchar)
-            self.client_connectors.remove(conn)
-            self.number -= 1
+            # self.used_id.remove(conn.idchar)
+            i = self.client_connectors.index(conn)
+            self.client_connectors[i] = None
+            # self.number -= 1
         self.connect()
 
     def register(self):
-        cli_id = None
-        while (cli_id is None) or (cli_id in self.used_id) or (cli_id == "00"):
-            a = list(string.ascii_letters)
-            random.shuffle(a)
-            cli_id = ''.join(a[:2])
-        self.used_id.append(cli_id)
-        return cli_id
+        # cli_id = None
+        # while (cli_id is None) or (cli_id in self.used_id) or (cli_id == "00"):
+            # a = list(string.ascii_letters)
+            # random.shuffle(a)
+            # cli_id = ''.join(a[:2])
+        # self.used_id.append(cli_id)
+        # return cli_id
+        for i in range(self.req_num):
+            if self.client_connectors[i] == None:
+                self.client_connectors[i] = 1   # stands for pending for auth
+                return i
+        raise ValueError
 
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
@@ -445,18 +499,20 @@ class Control:
         That is when conn.transport becomes None.
         """
         # TODO: why does this happen?
-        conn = self.proxy_connectors[conn_id]
-        conn.dead = True
-        logging.warning("proxy connection %s lost unexpectedly" % conn_id)
-        conn.respond()
-        self.proxy_finish(conn_id)
+        # conn = self.proxy_connectors[conn_id]
+        # conn.dead = True
+        # logging.warning("proxy connection %s lost unexpectedly" % conn_id)
+        # conn.respond()
+        # self.proxy_finish(conn_id)
+        pass
 
     def proxy_finish(self, conn_id):
-        """Record the max index.
+        """Tell the client that a request has finished and record the max index.
 
         Called when proxy connection is lost.
         """
-        self.max_index[conn_id] = self.client_write_queues_index[conn_id] - 1
+        self.client_write(self.close_char, conn_id)
+        self.max_index[conn_id] = self.client_global_idx[conn_id] - 1
 
 
     def proxy_finish_exec(self, conn_id):
@@ -464,11 +520,17 @@ class Control:
 
         Called when client has received all data.
         """
-        if len(self.client_connectors) != 0:
-            self.client_write(self.close_char, conn_id)
-        self.del_proxy_conn(conn_id)
+        # if len(self.client_connectors) != 0:
+            # self.client_write(self.close_char, conn_id)
+        # self.del_proxy_conn(conn_id)
+        pass
+        # TODO: remove this method?
 
     def next_write_index(self, conn_id):
         self.proxy_write_queues_index[conn_id] += 1
         if self.proxy_write_queues_index[conn_id] == 1000000:
+                # TODO: raise exception / cut connection
             self.proxy_write_queues_index[conn_id] = 100000
+
+# TODO: use the same strategy for proxy and client, to avoid error with large
+# upload files
