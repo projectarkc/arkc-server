@@ -30,7 +30,6 @@ class ClientConnector(Protocol):
 
         self.main_pw = self.initiator.main_pw
         # control characters
-        # self.split_char = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
         self.split_char = chr(27) + chr(28) + "%X" % struct.unpack('B', self.main_pw[-2:-1])[
             0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
         self.pri = self.initiator.initiator.pri
