@@ -176,4 +176,7 @@ class Coordinator(DatagramProtocol):
         #    logging.error("unknown error: " + str(err))
 
     def remove_ctl(self, client_sha1):
-        self.controls.pop(client_sha1)
+        try:
+            self.controls.pop(client_sha1)
+        except Exception:
+            pass
