@@ -48,8 +48,8 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_sha1, client_pub, client_pri_sha1, host, port,
-                 main_pw, req_num, certs_str=None):
+    def __init__(self, initiator, client_sha1, client_pub, client_pri_sha1,
+                 host, port, main_pw, req_num, certs_str=None):
         self.initiator = initiator
         self.socksproxy = self.initiator.socksproxy
         self.close_char = chr(4) * 5
@@ -191,15 +191,16 @@ class Control:
             deferred = connectProtocol(point, connector)
             # trigger success or failure action depending on the result
             deferred.addCallback(self.success)
-            deferred.addErrback(lambda ignored: self.retry())
+            deferred.addErrback(lambda ignored: self.retry(connector))
 
-    def retry(self):
+    def retry(self, conn):
         """Triggered when a failure connecting client occurs.
 
         Decrement the number of available connections
         (which is pre-added when trying to connect),
         and retry until the max retry count is reached.
         """
+        self.client_connectors[conn.i] = None
         if self.retry_count < self.max_retry:
             host, port = self.host, self.port
             logging.warning("retry connection to %s:%d" % (host, port))
@@ -408,7 +409,8 @@ class Control:
     def register(self):
         for i in range(self.req_num):
             if self.client_connectors[i] == None:
-                self.client_connectors[i] = 1   # stands for pending for auth
+                # stands for pending for connection success
+                self.client_connectors[i] = 1
                 return i
         raise ValueError
 
