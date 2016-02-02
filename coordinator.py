@@ -148,11 +148,13 @@ class Coordinator(DatagramProtocol):
 
             main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
                 self.parse_udp_msg(*query_data[:6])
+            if number <= 0:
+                raise CorruptedReq
             if client_sha1 is None:
                 raise DuplicateError
             if client_sha1 not in self.controls:
                 client_pub = self.certs[client_sha1][0]
-                control = Control(self, client_pub, self.certs[client_sha1][1],
+                control = Control(self, client_sha1, client_pub, self.certs[client_sha1][1],
                                   remote_ip, tcp_port,
                                   main_pw, number, certs_str)
                 self.controls[client_sha1] = control
@@ -172,3 +174,6 @@ class Coordinator(DatagramProtocol):
             logging.error("client address or port changed")
         # except Exception as err:
         #    logging.error("unknown error: " + str(err))
+
+    def remove_ctl(self, client_sha1):
+        self.controls.pop(client_sha1)

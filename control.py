@@ -48,11 +48,12 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_pub, client_pri_sha1, host, port,
+    def __init__(self, initiator, client_sha1, client_pub, client_pri_sha1, host, port,
                  main_pw, req_num, certs_str=None):
         self.initiator = initiator
         self.socksproxy = self.initiator.socksproxy
         self.close_char = chr(4) * 5
+        self.client_sha1 = client_sha1
         self.obfs_level = self.initiator.obfs_level
         self.client_pub = client_pub
         self.client_pri_sha1 = client_pri_sha1
@@ -64,6 +65,7 @@ class Control:
         self.max_retry = 5
         self.retry_count = 0
         self.swap_count = 0
+
         self.preferred_conn = None
         self.client_connectors = [None] * req_num
 
@@ -118,17 +120,17 @@ class Control:
 
         # reactor.callLater(1, self.broadcast)
 
-    def broadcast(self):
+    # def broadcast(self):
         # (Experimental function) tell the client what connections are valid
         # TODO: update this method
-        if not all(_ is None for _ in self.client_connectors):
-            str_send = ''
-            for i in self.used_id:
-                str_send += i + ','
-            str_send.rstrip(',')
+    #    if not all(_ is None for _ in self.client_connectors):
+    #        str_send = ''
+    #        for i in self.used_id:
+    #            str_send += i + ','
+    #        str_send.rstrip(',')
             # self.client_write(str_send, '00', '050') # TODO: disabled
             # experimental function
-        reactor.callLater(1, self.broadcast)
+    #    reactor.callLater(1, self.broadcast)
 
     # TODO: This pt is not working
     def ptinit(self):
@@ -160,8 +162,9 @@ class Control:
                 logging.info("client address change")
             else:
                 logging.error("pt mode does not allow client address change")
-        # self.req_num = req_num
-        # TODO: update req_num
+        if self.req_num < req_num:
+            # Reduce req_num when working is not permitted
+            self.client_connectors += [None] * (req_num - self.req_num)
         if self.main_pw != main_pw:
             self.main_pw = main_pw
             logging.info("main password change")
@@ -202,6 +205,8 @@ class Control:
             logging.warning("retry connection to %s:%d" % (host, port))
             self.retry_count += 1
             self.connect()
+        elif all(_ is None for _ in self.client_connectors):
+            self.dispose()
 
     def success(self, conn):
         """Triggered when successfully connected to client.
@@ -340,11 +345,14 @@ class Control:
         Triggered by proxy_recv or proxy_finish.
         """
 
-        conns_avail = filter(lambda _: _ not in (None, 1), self.client_connectors)
+        conns_avail = filter(
+            lambda _: _ not in (None, 1), self.client_connectors)
         if not len(conns_avail):
-            if self.retry_count < self.max_retry:
+            if self.retry_count < self.max_retry and self.req_num == 1:
                 logging.warning("no available socket")
                 return reactor.callLater(1, lambda: self.client_write(data, conn_id, index))
+            else:
+                self.dispose()
             return
             # TODO: reload coordinator
         if conn_id not in self.client_global_idx:
@@ -464,6 +472,18 @@ class Control:
         if self.proxy_write_queues_index[conn_id] == 1000000:
                 # TODO: raise exception / cut connection
             self.proxy_write_queues_index[conn_id] = 100000
+
+    def dispose(self):
+        try:
+            for i in self.client_connectors:
+                i.loseConnection()
+            for i in self.proxy_connectors:
+                self.proxy_connectors[i].loseConnection()
+            self.client_connectors = None
+            self.proxy_connectors = None
+        except Exception:
+            pass
+        self.initiator.remove_ctl(self.client_sha1)
 
 # TODO: use the same strategy for proxy and client, to avoid error with large
 # upload files
