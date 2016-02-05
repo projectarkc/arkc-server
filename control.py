@@ -130,26 +130,6 @@ class Control:
             # experimental function
     #    reactor.callLater(1, self.broadcast)
 
-    # TODO: This pt is not working
-    def ptinit(self):
-        atexit.register(exit_handler)
-        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
-        with open(path + os.sep + "ptserver.py") as f:
-            code = compile(f.read(), "ptserver.py", 'exec')
-            globals = {
-                "SERVER_string": self.host + ":" + str(self.port),
-                "ptexec": self.initiator.pt_exec + " -logLevel=ERROR",
-                "localport": self.ptproxy_local_port,
-                "remoteaddress": self.host,
-                "remoteport": self.port,
-                "certs": self.certs_str,
-                "LOCK": self.check,
-                "IAT": self.initiator.obfs_level
-            }
-            self.host = "127.0.0.1"
-            self.port = self.ptproxy_local_port
-            exec(code, globals)
-
     def update(self, host, port, main_pw, req_num):
         # Update the info in control object, called when different data come in
         # by new requests
@@ -266,50 +246,6 @@ class Control:
                     # completed, remove id
                     self.del_proxy_conn(cli_id)
 
-    def new_proxy_conn(self, conn_id):
-        """Create a connection to HTTP proxy corresponding to the given ID.
-
-        Return a Deferred object of the proxy connector.
-        """
-        logging.info("adding connection id " + conn_id)
-        try:
-            assert conn_id not in self.proxy_write_queues_dict
-            self.proxy_write_queues_dict[conn_id] = dict()
-            self.proxy_write_queues_index_dict[conn_id] = 100000
-            self.proxy_connectors_dict[conn_id] = ProxyConnector(self, conn_id)
-            point, connector = self.proxy_point, self.proxy_connectors_dict[
-                conn_id]
-            d = connectProtocol(point, connector)
-            d.addCallback(lambda ignored: self.proxy_write(conn_id))
-            d.addErrback(lambda ignored: logging.error("cannot connect proxy"))
-        except AssertionError:
-            logging.error("duplicate id")
-
-    def del_proxy_conn(self, conn_id):
-        """Remove the given ID.
-
-        Triggered when the ID is no longer in use.
-        """
-        logging.info("deleting connection id " + conn_id)
-        try:
-            assert self.proxy_write_queues_dict.pop(conn_id, None) is not None
-            assert self.proxy_write_queues_index_dict.pop(
-                conn_id, None) is not None
-
-            for i in range(self.req_num):
-                self.client_buf_pool[i].pop(conn_id, None)
-            self.proxy_recv_index_dict.pop(conn_id, None)
-            self.max_index.pop(conn_id, None)
-
-            assert conn_id in self.proxy_connectors_dict
-            tp = self.proxy_connectors_dict.pop(conn_id).transport
-            if tp:
-                tp.loseConnection()
-        except AssertionError:
-            logging.warning("deleting non-existing key %s" % conn_id)
-        except KeyError:
-            pass
-
     def client_recv(self, recv):
         """Handle request from client.
 
@@ -414,6 +350,50 @@ class Control:
                 return i
         raise ValueError
 
+    def new_proxy_conn(self, conn_id):
+        """Create a connection to HTTP proxy corresponding to the given ID.
+
+        Return a Deferred object of the proxy connector.
+        """
+        logging.info("adding connection id " + conn_id)
+        try:
+            assert conn_id not in self.proxy_write_queues_dict
+            self.proxy_write_queues_dict[conn_id] = dict()
+            self.proxy_write_queues_index_dict[conn_id] = 100000
+            self.proxy_connectors_dict[conn_id] = ProxyConnector(self, conn_id)
+            point, connector = self.proxy_point, self.proxy_connectors_dict[
+                conn_id]
+            d = connectProtocol(point, connector)
+            d.addCallback(lambda ignored: self.proxy_write(conn_id))
+            d.addErrback(lambda ignored: logging.error("cannot connect proxy"))
+        except AssertionError:
+            logging.error("duplicate id")
+
+    def del_proxy_conn(self, conn_id):
+        """Remove the given ID.
+
+        Triggered when the ID is no longer in use.
+        """
+        logging.info("deleting connection id " + conn_id)
+        try:
+            assert self.proxy_write_queues_dict.pop(conn_id, None) is not None
+            assert self.proxy_write_queues_index_dict.pop(
+                conn_id, None) is not None
+
+            for i in range(self.req_num):
+                self.client_buf_pool[i].pop(conn_id, None)
+            self.proxy_recv_index_dict.pop(conn_id, None)
+            self.max_index.pop(conn_id, None)
+
+            assert conn_id in self.proxy_connectors_dict
+            tp = self.proxy_connectors_dict.pop(conn_id).transport
+            if tp:
+                tp.loseConnection()
+        except AssertionError:
+            logging.warning("deleting non-existing key %s" % conn_id)
+        except KeyError:
+            pass
+
     def proxy_write(self, conn_id):
         """Forward all the data pending for the ID to the HTTP proxy."""
 
@@ -489,3 +469,23 @@ class Control:
 
 # TODO: use the same strategy for proxy and client, to avoid error with large
 # upload files
+
+    # TODO: This pt is not working
+    def ptinit(self):
+        atexit.register(exit_handler)
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "ptserver.py") as f:
+            code = compile(f.read(), "ptserver.py", 'exec')
+            globals = {
+                "SERVER_string": self.host + ":" + str(self.port),
+                "ptexec": self.initiator.pt_exec + " -logLevel=ERROR",
+                "localport": self.ptproxy_local_port,
+                "remoteaddress": self.host,
+                "remoteport": self.port,
+                "certs": self.certs_str,
+                "LOCK": self.check,
+                "IAT": self.initiator.obfs_level
+            }
+            self.host = "127.0.0.1"
+            self.port = self.ptproxy_local_port
+            exec(code, globals)
