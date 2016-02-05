@@ -80,7 +80,9 @@ class Control:
         self.proxy_write_queues_index_dict = dict()
         self.proxy_recv_index_dict = dict()
 
-        self.max_index = dict()  # TODO: need clarification
+        # maps ID to the index of the LAST segment to be transmitted with this
+        # ID, updated when the proxy server closes a connection
+        self.proxy_max_index_dict = dict()
 
         # Create an endpoint for the HTTP proxy
         host, port = "127.0.0.1", self.initiator.proxy_port
@@ -242,7 +244,8 @@ class Control:
                 for idx, data in queue:
                     self.client_write(data, cli_id, idx)
             else:
-                if max_recved_idx[cli_id] == self.max_index.get(cli_id, None):
+                if max_recved_idx[cli_id] == self.proxy_max_index_dict.\
+                        get(cli_id, None):
                     # completed, remove id
                     self.del_proxy_conn(cli_id)
 
@@ -383,7 +386,7 @@ class Control:
             for i in range(self.req_num):
                 self.client_buf_pool[i].pop(conn_id, None)
             self.proxy_recv_index_dict.pop(conn_id, None)
-            self.max_index.pop(conn_id, None)
+            self.proxy_max_index_dict.pop(conn_id, None)
 
             assert conn_id in self.proxy_connectors_dict
             tp = self.proxy_connectors_dict.pop(conn_id).transport
@@ -447,7 +450,8 @@ class Control:
         Called when proxy connection is lost.
         """
         self.client_write(self.close_char, conn_id)
-        self.max_index[conn_id] = self.proxy_recv_index_dict[conn_id] - 1
+        self.proxy_max_index_dict[conn_id] =\
+            self.proxy_recv_index_dict[conn_id] - 1
 
     def next_write_index(self, conn_id):
         self.proxy_write_queues_index_dict[conn_id] += 1
