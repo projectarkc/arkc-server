@@ -248,6 +248,22 @@ class Control:
                         # completed, remove id
                         self.del_proxy_conn(cli_id)
 
+    def retransmit_clientconn_reload(self, cc, max_recved_idx_dict):
+        i = self.client_connectors_pool.index(cc)
+        buf = self.client_buf_pool[i]
+        for cli_id in max_recved_idx_dict:
+            queue = buf[cli_id]
+            while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
+                queue.popleft()
+            if len(queue):
+                for idx, data in queue:
+                    self.client_write(data, cli_id, idx)
+            else:
+                if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
+                        get(cli_id, None):
+                    # completed, remove id
+                    self.del_proxy_conn(cli_id)
+
     def retransmit(self, cli_id, idx):
         for buf in self.client_buf_pool:
             pass
