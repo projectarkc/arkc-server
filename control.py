@@ -226,7 +226,7 @@ class Control:
             # TODO: ADD to some black list?
 
     def add_cli(self, conn):
-        assert self.client_connectors_pool[conn.i] == 1  # pending for auth
+        # assert self.client_connectors_pool[conn.i] == 1  # pending for auth
         self.client_connectors_pool[conn.i] = conn
 
     def remove_cli(self, conn):
@@ -252,17 +252,20 @@ class Control:
         i = self.client_connectors_pool.index(cc)
         buf = self.client_buf_pool[i]
         for cli_id in max_recved_idx_dict:
-            queue = buf[cli_id]
-            while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
-                queue.popleft()
-            if len(queue):
-                for idx, data in queue:
-                    self.client_write(data, cli_id, idx)
-            else:
-                if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
+            try:
+                queue = buf[cli_id]
+                while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
+                    queue.popleft()
+                if len(queue):
+                    for idx, data in queue:
+                        self.client_write(data, cli_id, idx)
+                elif max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
                         get(cli_id, None):
-                    # completed, remove id
+                        # completed, remove id
                     self.del_proxy_conn(cli_id)
+
+            except Exception:
+                pass
 
     def retransmit(self, cli_id, idx):
         for buf in self.client_buf_pool:
@@ -349,10 +352,10 @@ class Control:
 
         May result in better performance.
         """
+        reactor.callLater(0.1, self.client_reset_exec, conn)
         self.client_lost(conn)
         conn.write(self.close_char, "00", "100000")
         conn.authenticated = False
-        reactor.callLater(0.1, self.client_reset_exec, conn)
 
     def client_reset_exec(self, conn):
         try:
@@ -370,7 +373,8 @@ class Control:
             self.client_connectors_pool[i] = None
         elif self.client_connectors_pool[conn.i] == 1:
             self.client_connectors_pool[conn.i] = None
-        self.connect()
+        # Disable immediate connect seems to improve performance. #TODO: Why?
+        # self.connect()
 
     def register(self):
         for i in range(self.req_num):
