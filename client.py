@@ -129,7 +129,7 @@ class ClientConnector(Protocol):
                 if text_dec[1:].startswith(auth_str):
                     max_recved_idx = eval(text_dec[1:].lstrip(auth_str))
                     self.authenticate_success()
-                    self.initiator.update_max_idx(self, max_recved_idx)
+                    self.initiator.update_max_idx(max_recved_idx)
                 else:
                     self.close()
             else:

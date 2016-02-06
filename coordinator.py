@@ -80,7 +80,7 @@ class Coordinator(DatagramProtocol):
         assert len(msg[0]) == 46    # 2 + 4 + 40
 
         if msg[4] in self.recentsalt:
-            return None
+            return None, None, None, None, None, None
 
         num_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
         h = hashlib.sha256()
@@ -92,6 +92,8 @@ class Coordinator(DatagramProtocol):
             remote_ip = str(ipaddress.IPv6Address(int(msg[3][:-1], 36)))
         main_pw = binascii.unhexlify(msg[2])
         number = int(num_hex, 16)
+        if number <= 0:
+            number = None
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
@@ -148,7 +150,7 @@ class Coordinator(DatagramProtocol):
 
             main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
                 self.parse_udp_msg(*query_data[:6])
-            if number <= 0:
+            if number is None:
                 raise CorruptedReq
             if client_sha1 is None:
                 raise DuplicateError
