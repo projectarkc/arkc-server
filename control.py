@@ -235,19 +235,22 @@ class Control:
         # TODO: deal with this case correctly
         self.client_connectors_pool[conn.i] = None
 
-    def update_max_idx(self, cc, max_recved_idx_dict):
+    def update_max_idx(self, max_recved_idx_dict):
         """Remove completed buffer and (optionally) retransmit the remaining."""
-        i = self.client_connectors_pool.index(cc)
-        buf = self.client_buf_pool[i]
-        for cli_id in max_recved_idx_dict:
-            queue = buf[cli_id]
-            while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
-                queue.popleft()
-            else:
-                if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
-                        get(cli_id, None):
-                    # completed, remove id
-                    self.del_proxy_conn(cli_id)
+        for buf in self.client_buf_pool:
+            for cli_id in max_recved_idx_dict:
+                queue = buf[cli_id]
+                while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
+                    queue.popleft()
+                else:
+                    if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
+                            get(cli_id, None):
+                        # completed, remove id
+                        self.del_proxy_conn(cli_id)
+
+    def retransmit(self, cli_id, idx):
+        for buf in self.client_buf_pool:
+            pass
 
     def client_recv(self, recv, cc):
         """Handle request from client.
@@ -271,7 +274,9 @@ class Control:
         elif index == 30:   # confirmation
             confirmed_idx = int(data)
             max_recved_idx_dict = {conn_id: confirmed_idx}
-            self.update_max_idx(cc, max_recved_idx_dict)
+            self.update_max_idx(max_recved_idx_dict)
+        elif index == 20:
+            self.retransmit(conn_id, int(data))
         else:
             try:
                 if conn_id not in self.proxy_connectors_dict:
