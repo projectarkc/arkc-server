@@ -122,7 +122,7 @@ class ClientConnector(Protocol):
             # flag is 0 for normal data packet, 1 for ping packet, 2 for auth
             flag = int(text_dec[0])
             if flag == 0:
-                self.initiator.client_recv(text_dec[1:])
+                self.initiator.client_recv(text_dec[1:], self)
             elif flag == 2:
                 auth_str = "AUTHENTICATED" + self.idchar
                 if text_dec[1:].startswith(auth_str):

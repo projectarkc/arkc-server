@@ -231,25 +231,25 @@ class Control:
         # TODO: deal with this case correctly
         self.client_connectors_pool[conn.i] = None
 
-    def update_max_idx(self, cc, max_recved_idx):
-        """Remove completed buffer and retransmit the remaining."""
+    def update_max_idx(self, cc, max_recved_idx_dict, retransmit=True):
+        """Remove completed buffer and (optionally) retransmit the remaining."""
         i = self.client_connectors_pool.index(cc)
         buf = self.client_buf_pool[i]
-        for cli_id in max_recved_idx:
+        for cli_id in max_recved_idx_dict:
             queue = buf[cli_id]
-            while len(queue) and queue[0][0] <= max_recved_idx[cli_id]:
+            while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
                 queue.popleft()
             if len(queue):
-                # retransmit
-                for idx, data in queue:
-                    self.client_write(data, cli_id, idx)
+                if retransmit:
+                    for idx, data in queue:
+                        self.client_write(data, cli_id, idx)
             else:
-                if max_recved_idx[cli_id] == self.proxy_max_index_dict.\
+                if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
                         get(cli_id, None):
                     # completed, remove id
                     self.del_proxy_conn(cli_id)
 
-    def client_recv(self, recv):
+    def client_recv(self, recv, cc):
         """Handle request from client.
 
         Should be decrypted by ClientConnector first.
@@ -268,6 +268,10 @@ class Control:
                     conn.transport.loseConnection()
             else:
                 logging.debug("closing non-existing connection")
+        elif index == 30:   # confirmation
+            confirmed_idx = int(data)
+            max_recved_idx_dict = {conn_id: confirmed_idx}
+            self.update_max_idx(cc, max_recved_idx_dict, retransmit=False)
         else:
             try:
                 if conn_id not in self.proxy_connectors_dict:
