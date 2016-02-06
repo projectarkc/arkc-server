@@ -67,6 +67,10 @@ class Control:
         self.swap_count = 0
 
         self.preferred_conn = None
+
+        # None -> no connection
+        # 1 -> connection in authentication
+        # ClientConnector -> connection ready
         self.client_connectors_pool = [None] * req_num
         # each entry is a dict: conn_id -> queue
         # a queue is formed by (index, data) pairs in order
@@ -347,6 +351,8 @@ class Control:
         if conn in self.client_connectors_pool:
             i = self.client_connectors_pool.index(conn)
             self.client_connectors_pool[i] = None
+        elif self.client_connectors_pool[conn.i] == 1:
+            self.client_connectors_pool[conn.i] = None
         self.connect()
 
     def register(self):

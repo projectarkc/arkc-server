@@ -40,7 +40,8 @@ class ClientConnector(Protocol):
         self.buffer = ""
         self.latency = 10000
         self.i = initiator.register()
-        self.idchar = (str(self.i) if 10 <= self.i <= 99 else '0' + str(self.i))
+        self.idchar = (
+            str(self.i) if 10 <= self.i <= 99 else '0' + str(self.i))
         self.cronjob = None
         self.cancel_job = None
 
