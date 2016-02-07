@@ -46,7 +46,7 @@ class ClientConnector(Protocol):
         self.cancel_job = None
 
     def generate_auth_msg(self):
-        """Generate encrypted message.
+        """Generate encrypted message. For auth and init.
 
         The message is in the form
             server_sign(main_pw) (HEX) +
@@ -55,7 +55,8 @@ class ClientConnector(Protocol):
         """
         hex_sign = '%X' % self.pri.sign(self.main_pw, None)[0]
         pw_enc = self.client_pub.encrypt(self.session_pw, None)[0]
-        return hex_sign + pw_enc + self.idchar
+        return hex_sign + pw_enc + self.idchar +\
+            repr(self.initiator.client_recv_index_dict[self.i])
 
     def ping_send(self):
         """Send the initial ping message to the client at a certain interval.
@@ -101,7 +102,7 @@ class ClientConnector(Protocol):
         """Event handler of being successfully connected to the client."""
         logging.info("connected to client " +
                      addr_to_str(self.transport.getPeer()))
-        self.transport.write(self.generate_auth_msg())
+        self.transport.write(self.generate_auth_msg() + self.split_char)
 
     def dataReceived(self, recv_data):
         """Event handler of receiving some data from client.

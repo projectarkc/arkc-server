@@ -4,7 +4,6 @@ import random
 import bisect
 import base64
 import socket
-import SocketServer
 
 import struct
 from errno import EOPNOTSUPP, EINVAL, EAGAIN

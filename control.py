@@ -84,6 +84,8 @@ class Control:
         self.proxy_write_queues_index_dict = dict()
         self.proxy_recv_index_dict = dict()
 
+        self.client_recv_index_dict = [{}] * req_num
+
         # maps ID to the index of the LAST segment to be transmitted with this
         # ID, updated when the proxy server closes a connection
         self.proxy_max_index_dict = dict()
@@ -304,6 +306,7 @@ class Control:
                     # proxy_write called later
                 else:
                     self.proxy_write_queues_dict[conn_id][index] = data
+                    self.client_recv_index_dict[cc.i][conn_id] = index
                     self.proxy_write(conn_id)
             except KeyError:
                 self.client_write(self.close_char, conn_id, "100000")
@@ -445,6 +448,9 @@ class Control:
                         addr_to_str(conn.transport.getPeer()),
                         conn_id))
                     conn.transport.write(data)
+            if self.proxy_write_queues_index_dict[conn_id] % self.req_num == 0:
+                self.client_write(str(self.proxy_write_queues_index_dict[conn_id]),
+                                  conn_id, 30)
         if self.proxy_write_queues_index_dict[conn_id] + 7 in self.proxy_write_queues_dict[conn_id]:
             logging.debug("lost frame in connection " + conn_id)
             # TODO: Retransmission
