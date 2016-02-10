@@ -31,7 +31,7 @@ def start_proxy(port):
     reactor.listenTCP(port, factory, interface="127.0.0.1")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Start ArkC server.")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="show detailed logs")
@@ -155,3 +155,6 @@ The programs is distributed under GNU General Public License Version 2.
         reactor.run()
     except KeyboardInterrupt:
         pass
+
+if __name__ == "__main__":
+    main()
