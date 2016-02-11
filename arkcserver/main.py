@@ -6,7 +6,7 @@ import json
 import sys
 import os.path
 
-sys.path.insert(1, os.path.dirname(sys.path[0]))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from Crypto.PublicKey import RSA
 from hashlib import sha1
