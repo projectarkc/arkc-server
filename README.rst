@@ -104,7 +104,7 @@ The server-end software adapted part of the pyotp library created by
 Mark Percival m@mdp.im. His code is reused under Python Port copyright,
 license attached.
 
-File ptclient.py is based on ptproxy by Dingyuan Wang. Code reused and
+File arkcserver/ptserver.py is based on ptproxy by Dingyuan Wang. Code reused and
 edited under MIT license, attached in file.
 
 License
