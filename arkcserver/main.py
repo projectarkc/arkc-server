@@ -4,6 +4,10 @@ import logging
 import argparse
 import json
 import sys
+import os.path
+
+sys.path.insert(1, os.path.dirname(sys.path[0]))
+
 from Crypto.PublicKey import RSA
 from hashlib import sha1
 from twisted.internet import reactor
