@@ -3,8 +3,8 @@ import sys
 from setuptools import setup
 
 
-#with codecs.open('README.rst', encoding='utf-8') as f:
-#    long_description = f.read()
+with codecs.open('README.rst', encoding='utf-8') as f:
+    long_description = f.read()
 
 if str(sys.version_info.major) == '2':
     pkg_name = 'arkcserver'
@@ -65,7 +65,7 @@ setup(
     package_data=pkg_data,
     install_requires=required,
     entry_points=entry,
-    classifiers=categories
-#    long_description=long_description,
+    classifiers=categories,
+    long_description=long_description,
 )
 
