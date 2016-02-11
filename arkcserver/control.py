@@ -241,13 +241,16 @@ class Control:
         """Remove completed buffer and (optionally) retransmit the remaining."""
         for buf in self.client_buf_pool:
             for cli_id in max_recved_idx_dict:
-                queue = buf[cli_id]
-                while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
-                    queue.popleft()
-                if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
-                        get(cli_id, None):
-                    # completed, remove id
-                    self.del_proxy_conn(cli_id)
+                try:
+                    queue = buf[cli_id]
+                    while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
+                        queue.popleft()
+                    if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
+                            get(cli_id, None):
+                        # completed, remove id
+                        self.del_proxy_conn(cli_id)
+                except KeyError:
+                    pass
 
     def retransmit_clientconn_reload(self, cc, max_recved_idx_dict):
         i = self.client_connectors_pool.index(cc)
@@ -486,8 +489,11 @@ class Control:
         Called when proxy connection is lost.
         """
         self.client_write(self.close_char, conn_id)
-        self.proxy_max_index_dict[conn_id] =\
-            self.proxy_recv_index_dict[conn_id] - 1
+        try:
+            self.proxy_max_index_dict[conn_id] =\
+                self.proxy_recv_index_dict[conn_id] - 1
+        except KeyError:
+            pass
 
     def next_write_index(self, conn_id):
         self.proxy_write_queues_index_dict[conn_id] += 1

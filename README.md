@@ -24,9 +24,9 @@ Fedora users:
 sudo yum python python-pip python-devel
 ```
 
-You may also install that from source.
+You may also install ArkC Server from source.
 
-##Privillege
+##Privilege
 
 By default ArkC Server needs to listen to port 53 to support DNS relay function (client may connect to server through multiple steps of DNS queries). Usually this requires pre-configuration or root privillege.
 
