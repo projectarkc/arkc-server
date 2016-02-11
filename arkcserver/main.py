@@ -72,7 +72,7 @@ The programs is distributed under GNU General Public License Version 2.
                 remote_cert_txt = f.read()
                 remote_cert = RSA.importKey(remote_cert_txt)
                 remote_cert_txt = remote_cert_txt.strip(
-                    ' ').strip('\n').strip(' ')
+                    ' ').lstrip('\n')
                 certs[sha1(remote_cert_txt).hexdigest()] =\
                      [remote_cert, client[1]]
     except Exception as err:
