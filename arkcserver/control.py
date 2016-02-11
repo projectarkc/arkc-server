@@ -499,8 +499,10 @@ class Control:
         try:
             for i in self.client_connectors_pool:
                 i.loseConnection()
+                del i
             for i in self.proxy_connectors_dict:
                 self.proxy_connectors_dict[i].loseConnection()
+                del i
             self.client_connectors_pool = None
             self.proxy_connectors_dict = None
         except Exception:

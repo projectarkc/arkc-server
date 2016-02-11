@@ -179,6 +179,7 @@ class Coordinator(DatagramProtocol):
 
     def remove_ctl(self, client_sha1):
         try:
+            del self.controls[client_sha1]
             self.controls.pop(client_sha1)
         except Exception:
             pass

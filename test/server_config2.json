@@ -1,6 +1,6 @@
 {
 	"local_cert_path":"testfiles/server",
 	"central_cert": "testfiles/server.pub",
-	"clients": [["testfiles/client.pub", "c5645fb3a1b523e5b67ee2da221bb036ab16ec18", "7KjkCav/78CNkgmI9QSHKG2d8kmkxsz9rECMJdusRocUCLZfe2NUI4ZZhERPgg7pnwj+Dw"]],
+	"clients": [["testfiles/client.pub", "c5645fb3a1b523e5b67ee2da221bb036ab16ec18"]],
 	"obfs_level":0
 }
