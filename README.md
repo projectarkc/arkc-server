@@ -1,6 +1,6 @@
-#ArkC-server
+#ArkC-Server V0.2
 
-ArkC is a lightweight proxy based on Python and Twisted, and uses PyCrypto for encryption. It is designed to be proof to IP blocking measures.
+ArkC is a lightweight proxy designed to be proof to IP blocking measures and offer high proxy speed via multi-connection transmission and swapping connections.
 
 ArkC-Server is the server-side utility.
 
@@ -8,35 +8,46 @@ ArkC-Server is the server-side utility.
 
 Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is currently not supported for compatibility issues) and txsocksx. A virtual environment is generally recommended.
 
-For Debian or Ubuntu users:
+```
+sudo pip install arkcserver
+```
 
+You may need python development environment. 
+
+Debian/Ubuntu users:
 ```
-sudo apt-get install python-virtualenv python-dev python-psutil obfs4proxy
-virtualenv ~/virtualenvs/arkc-server
-. ~/virtualenvs/arkc-server/bin/activate
-pip install -r requirements.txt
-chmod +x install.sh
-./install.sh
+sudo apt-get install python python-pip python-dev
 ```
+
+Fedora users:
+```
+sudo yum python python-pip python-devel
+```
+
+You may also install that from source.
+
+##Privillege
+
+By default ArkC Server needs to listen to port 53 to support DNS relay function (client may connect to server through multiple steps of DNS queries). Usually this requires pre-configuration or root privillege.
 
 ##Usage
 
 Run
 
 ```
-python main.py [-h] [-v] [-ep (use external proxy)] [-c <Path of the config Json file, default = config.json>]
+arkcserver [-h] [-v] [-ep (use external proxy)] [-c <Path of the config Json file, default = config.json>]
 ```
 
-In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
+In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa.
 
 For the configuration file, you can find an example here:
 
 ```
 {
-    "local_cert_path": "/home/tony/arkc/testfiles/server",
+    "local_cert_path": "testfiles/server",
     "clients": [
-        ["/home/tony/arkc/testfiles/client1.pub", "<sha1 of client1's private key>"],
-        ["/home/tony/arkc/testfiles/client2.pub", "<sha1 of client2's private key>"]
+        ["testfiles/client1.pub", <sha1 of client1's private key>],
+        ["testfiles/client2.pub", <sha1 of client2's private key>]
     ]
 }
 ```

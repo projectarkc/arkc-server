@@ -245,7 +245,7 @@ class Control:
                 while len(queue) and queue[0][0] <= max_recved_idx_dict[cli_id]:
                     queue.popleft()
                 if max_recved_idx_dict[cli_id] == self.proxy_max_index_dict.\
-                            get(cli_id, None):
+                        get(cli_id, None):
                     # completed, remove id
                     self.del_proxy_conn(cli_id)
 

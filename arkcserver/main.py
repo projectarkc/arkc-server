@@ -32,21 +32,20 @@ def start_proxy(port):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Start ArkC server.")
+    parser = argparse.ArgumentParser(description=None)
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="show detailed logs")
     parser.add_argument("-vv", action="store_true", dest="vv",
                         help="show debug logs")
-    parser.add_argument('-c', '--config', dest="config", default='config.json',
-                        help="You must specify a configuration files. \
-                        By default ./config.json is used.")
+    parser.add_argument('-c', '--config', dest="config", required=True,
+                        help="specify a configuration files, required for ArkC to start")
 
     parser.add_argument('-ep', "--use-external-proxy", action="store_true",
-                        help="use an external HTTPS proxy server running locally,\
-                        e.g. polipo, for better performance.\
-                        Fall back to in-built python proxy server otherwise.")
+                        help="""use an external proxy server or handler running locally,e.g. polipo, for better performance.
+Use this option to support other types of proxy other than HTTP, or use authentication at client-end proxy.
+Fall back to in-built python proxy server otherwise.""")
     print(
-        """ArkC Server V0.1.2, by ArkC Technology.
+        """ArkC Server V0.2, by ArkC Technology.
 The programs is distributed under GNU General Public License Version 2.
 """)
 
@@ -72,6 +71,8 @@ The programs is distributed under GNU General Public License Version 2.
             with open(client[0], "r") as f:
                 remote_cert_txt = f.read()
                 remote_cert = RSA.importKey(remote_cert_txt)
+                remote_cert_txt = remote_cert_txt.strip(
+                    ' ').strip('\n').strip(' ')
                 certs[sha1(remote_cert_txt).hexdigest()] =\
                      [remote_cert, client[1]]
     except Exception as err:
