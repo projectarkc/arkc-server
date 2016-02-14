@@ -37,7 +37,7 @@ class Coordinator(DatagramProtocol):
     """
 
     def __init__(self, proxy_port, socksproxy, pri, certs,
-                 delegatedomain, selfdomain, pt_exec, obfs_level, meek_url):
+                 central_cert, delegatedomain, selfdomain, pt_exec, obfs_level, meek_url, transmit):
         self.proxy_port = proxy_port
         self.socksproxy = socksproxy
         self.pri = pri
@@ -47,7 +47,8 @@ class Coordinator(DatagramProtocol):
         self.obfs_level = obfs_level
         self.usedports = []
         self.meek_url = meek_url
-
+        self.transmit = transmit
+        self.central_pub = central_cert
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs = certs
 
@@ -108,6 +109,48 @@ class Coordinator(DatagramProtocol):
             certs_str = None
 
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
+    
+    def parse_udp_msg_transmit(self,*msg):
+        """Return (main_pw, client_sha1, number).
+         The encrypted message should be
+             salt +
+             required_connection_number (HEX, 2 bytes) +
+             client_listen_port (HEX, 4 bytes) +
+             sha1(local_pub) +
+             client_sign(salt) +
+             server_pub(main_pw) +
+             remote_ip
+         Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
+         """
+
+        #assert len(msg) == 830
+        salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc, remote_ip_enc = \
+            msg[:16], msg[16:18], msg[18:22], msg[
+                22:62], msg[62:574], (msg[574:])[:-7], msg[-7:]
+        if salt in self.recentsalt:
+            return (None, None, None, None)
+        remote_ip = str(
+            ipaddress.ip_address(int(remote_ip_enc.rstrip("="), 36)))
+        salt_sign = (int(salt_sign_hex, 16),)
+        number = int(number_hex, 16)
+        remote_port = int(port_hex, 16)
+        assert self.central_pub.verify(
+            salt + str(number) + remote_ip_enc + str(remote_port), salt_sign)
+        main_pw = self.pri.decrypt(main_pw_enc)
+        if len(self.recentsalt) >= MAX_SALT_BUFFER:
+            self.recentsalt.pop(0)
+        self.recentsalt.append(salt)
+
+        # if not self.obfs_level:
+        #    certs_str = None
+        # else:
+        #    # ptproxy enabled
+        #    certs_original = msg[5] + msg[6]
+        #    certs_original += '=' * ((160 - len(certs_original)) % 4)
+        #    certs_str = urlsafe_b64_short_decode(certs_original)
+        certs_str = None
+
+        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
 
     def answer(self, dnsq, addr):
         answer = dnsq.reply()
@@ -135,21 +178,26 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
         logging.debug("received DNS request from %s:%d" % (addr[0], addr[1]))
-        try:
-            dnsq = dnslib.DNSRecord.parse(data)
-            query_data = str(dnsq.q.qname).split('.')
-            # Give a NXDOMAIN response
-            self.answer(dnsq, addr)
-        except KeyError:
-            logging.info("Corrupt request")
+        if not self.transmit:
+            try:
+                dnsq = dnslib.DNSRecord.parse(data)
+                query_data = str(dnsq.q.qname).split('.')
+                # Give a NXDOMAIN response
+                self.answer(dnsq, addr)
+            except KeyError:
+                logging.info("Corrupt request")
 
         try:
             # One control corresponds to one client (with a unique SHA1)
 
             # TODO: get obfs level from query length
 
-            main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
-                self.parse_udp_msg(*query_data[:6])
+            if self.transmit:          
+                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
+                    self.parse_udp_msg_transmit(data)
+            else:
+                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
+                    self.parse_udp_msg(*query_data[:6])
             if number is None:
                 raise CorruptedReq
             if client_sha1 is None:

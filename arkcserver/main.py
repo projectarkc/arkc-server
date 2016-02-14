@@ -43,6 +43,8 @@ def main():
                         help="show debug logs")
     parser.add_argument('-c', '--config', dest="config", required=True,
                         help="specify a configuration files, required for ArkC to start")
+    parser.add_argument("-t", action="store_true", dest="transmit",
+                        help="use transmit server")
 
     parser.add_argument('-ep', "--use-external-proxy", action="store_true",
                         help="""use an external proxy server or handler running locally,e.g. polipo, for better performance.
@@ -84,6 +86,15 @@ The programs is distributed under GNU General Public License Version 2.
         print (err)
         quit()
 
+    if args.transmit:
+        try:
+            with open(data["central_cert"], "r") as f:
+                central_cert_txt = f.read()
+                central_cert = RSA.importKey(central_cert_txt)
+        except Exception as err:
+            print ("Fatal error while loading client certificate.")
+            print (err)
+            quit()
     try:
         with open(data["local_cert_path"], "r") as f:
             local_cert = RSA.importKey(f.read())
@@ -114,6 +125,8 @@ The programs is distributed under GNU General Public License Version 2.
 
     if "udp_port" not in data:
         data["udp_port"] = 53
+        if args.transmit:
+            data["udp_port"] = 8000
 
     if "socks_proxy" not in data:
         data["socks_proxy"] = None
@@ -142,11 +155,13 @@ The programs is distributed under GNU General Public License Version 2.
                 data["socks_proxy"],
                 local_cert,
                 certs,
+                central_cert,
                 data["delegated_domain"],
                 data["self_domain"],
                 data["pt_exec"],
                 data["obfs_level"],
-                data["meek_url"]
+                data["meek_url"],
+                args.transmit
             )
         )
     except CannotListenError as err:
