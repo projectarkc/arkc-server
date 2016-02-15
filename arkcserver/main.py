@@ -62,6 +62,7 @@ The programs is distributed under GNU General Public License Version 2.
 
     data = {}
 
+    central_cert=None    
     # Load json configuration file
     try:
         data_file = open(args.config)
