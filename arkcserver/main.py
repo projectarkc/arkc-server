@@ -62,7 +62,6 @@ The programs is distributed under GNU General Public License Version 2.
 
     data = {}
 
-    central_cert=None    
     # Load json configuration file
     try:
         data_file = open(args.config)
@@ -96,6 +95,9 @@ The programs is distributed under GNU General Public License Version 2.
             print ("Fatal error while loading client certificate.")
             print (err)
             quit()
+    else:
+        central_cert = None
+
     try:
         with open(data["local_cert_path"], "r") as f:
             local_cert = RSA.importKey(f.read())
@@ -125,9 +127,10 @@ The programs is distributed under GNU General Public License Version 2.
             data["proxy_port"] = 8123
 
     if "udp_port" not in data:
-        data["udp_port"] = 53
         if args.transmit:
             data["udp_port"] = 8000
+        else:
+            data["udp_port"] = 53
 
     if "socks_proxy" not in data:
         data["socks_proxy"] = None

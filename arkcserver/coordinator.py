@@ -37,7 +37,8 @@ class Coordinator(DatagramProtocol):
     """
 
     def __init__(self, proxy_port, socksproxy, pri, certs,
-                 central_cert, delegatedomain, selfdomain, pt_exec, obfs_level, meek_url, transmit):
+                 central_cert, delegatedomain, selfdomain, pt_exec,
+                 obfs_level, meek_url, transmit):
         self.proxy_port = proxy_port
         self.socksproxy = socksproxy
         self.pri = pri
@@ -109,8 +110,8 @@ class Coordinator(DatagramProtocol):
             certs_str = None
 
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
-    
-    def parse_udp_msg_transmit(self,*msg):
+
+    def parse_udp_msg_transmit(self, msg):
         """Return (main_pw, client_sha1, number).
          The encrypted message should be
              salt +
@@ -178,6 +179,7 @@ class Coordinator(DatagramProtocol):
         to it if it is trusted.
         """
         logging.debug("received DNS request from %s:%d" % (addr[0], addr[1]))
+
         if not self.transmit:
             try:
                 dnsq = dnslib.DNSRecord.parse(data)
@@ -192,7 +194,7 @@ class Coordinator(DatagramProtocol):
 
             # TODO: get obfs level from query length
 
-            if self.transmit:          
+            if self.transmit:
                 main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
                     self.parse_udp_msg_transmit(data)
             else:
