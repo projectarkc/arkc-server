@@ -48,7 +48,7 @@ Run
 
 ::
 
-    arkcserver [-h] [-v] [-ep (use external proxy)] [-c <Path of the config Json file, default = config.json>]
+    arkcserver [-h] [-v] [-ep (use external proxy)] [-t (use transmit mode)] [-c <Path of the config Json file, default = config.json>]
 
 In this version, any private certificate should be in the form of PEM
 without encryption, while any public certificate should be in the form
@@ -76,6 +76,8 @@ For a full list of settings:
 | proxy\_port         | int, local/ext proxy port                              | 8100(local)/8123(ext)                 |
 +---------------------+--------------------------------------------------------+---------------------------------------+
 | local\_cert\_path   | str, path of server pri                                | REQUIRED                              |
++---------------------+--------------------------------------------------------+---------------------------------------+
+| central\_cert\_path   | str, path of central server pub                                | REQUIRED if using transmit mode                           |
 +---------------------+--------------------------------------------------------+---------------------------------------+
 | clients             | list, (path of client pub, sha1 of client pri) pairs   | REQUIRED                              |
 +---------------------+--------------------------------------------------------+---------------------------------------+
