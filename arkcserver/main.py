@@ -148,7 +148,7 @@ The programs is distributed under GNU General Public License Version 2.
         data["obfs_level"] = 0
 
     if "meek_url" not in data:
-        data["meek_url"] = "https://arkc.appspot.com/"
+        data["meek_url"] = "https://arkc-reflect1.appspot.com/"
 
     # Start the loop
     try:
