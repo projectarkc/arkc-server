@@ -9,13 +9,12 @@ from txsocksx.client import SOCKS4ClientEndpoint as SOCKS4Point
 import threading
 import random
 import os
-import string
 import sys
 
 from proxy import ProxyConnector
 from utils import addr_to_str
 from client import ClientConnector
-from meekserver import meekinit
+from meekserver import meekinit, meekterm
 import psutil
 import atexit
 EXPIRE_TIME = 5
@@ -502,6 +501,8 @@ class Control:
             self.proxy_write_queues_index_dict[conn_id] = 100000
 
     def dispose(self):
+        if self.obfs_level == 3:
+            meekterm()
         try:
             for i in self.client_connectors_pool:
                 i.loseConnection()

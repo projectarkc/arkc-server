@@ -85,7 +85,7 @@ def parseptline(stdout):
 
 def runpt():
     global CFG, PTREADY
-    while CFG['_run']:
+    if CFG['_run']:
         print(logtime(), 'Starting PT...')
         proc = checkproc()
         # If error then die
@@ -98,7 +98,7 @@ def runpt():
             while out:
                 print(
                     logtime(), out.decode('utf_8', errors='replace').rstrip('\n'))
-        except BrokenPipeError:
+        except OSError:
             pass
         PTREADY.clear()
         print(logtime(), 'PT died.')
@@ -124,3 +124,8 @@ def meekinit(init, var):
         CFG['_run'] = False
         if PT_PROC:
             PT_PROC.kill()
+
+
+def meekterm():
+    CFG['_run'] = False
+    PT_PROC.kill()
