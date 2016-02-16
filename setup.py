@@ -29,33 +29,12 @@ if str(sys.version_info.major) == '2':
         'Topic :: Internet :: Proxy Servers',
     ]
 else:
-    pkg_name = 'arkcclient'
-    pkg = ['arkcclient', 'arkcclient.pyotp']
-    pkg_data = {
-        'arkcserver': ['README.md', 'LICENSE'],
-	'arkcclient.pyotp': ['LICENSE']
-    }
-    required = ['pycrypto','dnslib', 'requests', 'miniupnpc']
-    entry = """
-    [console_scripts]
-    arkcclient = arkcclient.main:main
-    """
-    categories = [
-        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Topic :: Internet :: Proxy Servers',
-    ]
+    print("FATAL: ArkC Server 0.2 must be installed with Python2 for compatibility.")
+    quit()
 
 setup(
     name=pkg_name,
-    version="0.2.0.post2",
+    version="0.2.1-beta1",
     license='https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
     description="A lightweight proxy designed to be proof to IP blocking measures",
     author='Noah, Teba, Ddeerreekk',
