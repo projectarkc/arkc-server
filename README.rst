@@ -12,13 +12,13 @@ What is ArkC?
 
 ArkC allows users to enjoy free web browsing without worrying about censorship measures like IP blacklists. For VPS owners they are better equipped to share their VPS to people around them, or share online, the proxy hosted on their VPS.
 
-For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. ÖĞÎÄ°æ±¾µÄ½éÉÜÔÚÕâÒ»Ò³Ãæ `ArkCµÄÔ­Àí <https://arkc.org/understand_arkc_zh_cn/>`__¡£
+For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. ä¸­æ–‡ç‰ˆæœ¬çš„ä»‹ç»åœ¨è¿™ä¸€é¡µé¢ `ArkCçš„åŸç† <https://arkc.org/understand_arkc_zh_cn/>`__ã€‚
 
 Setup and Requirement
 ---------------------
 
-For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. ¶ÔÓÚ°²×°Óë²¿ÊğµÄÖĞÎÄËµÃ÷ÔÚ `²¿ÊğÓë°²×°ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__
-ÕâÒ»Ò³Ãæ¡£
+For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. å¯¹äºå®‰è£…ä¸éƒ¨ç½²çš„ä¸­æ–‡è¯´æ˜åœ¨ `éƒ¨ç½²ä¸å®‰è£…ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__
+è¿™ä¸€é¡µé¢ã€‚
 
 Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is
 currently not supported for compatibility issues) and txsocksx. A
@@ -58,7 +58,7 @@ Usage
 
 For detailed documentation, please visit our `Documentation page <https://arkc.org/documentation/>`__.
 
-ÖĞÎÄ°æ±¾µÄÊ¹ÓÃÎÄµµ£¬Çë²Î¼û `ÈçºÎÊ¹ÓÃArkC <https://arkc.org/documentation_zh_cn/>`__¡£
+ä¸­æ–‡ç‰ˆæœ¬çš„ä½¿ç”¨æ–‡æ¡£ï¼Œè¯·å‚è§ `å¦‚ä½•ä½¿ç”¨ArkC <https://arkc.org/documentation_zh_cn/>`__ã€‚
 
 Run
 
@@ -118,12 +118,12 @@ We want to provide free proxy service for netizens behind censorship firewalls, 
 
 We are raising fund to provide rewards for VPS owners in this plan via Google Play / iTunes gift cards. Read the `Plan homepage <https://arkc.org/shared-server-plan/>`__ for more information.
 
-Questions | Ê¹ÓÃ»ò°²×°Ê±Óöµ½ÎÊÌâ
+Questions | ä½¿ç”¨æˆ–å®‰è£…æ—¶é‡åˆ°é—®é¢˜
 --------------------------------------------------
 
 Go to our `FAQ page <https://arkc.org/faq/>`__.
 
-³£¼ûÎÊÌâÇë²Î¿¼ `FAQ <https://arkc.org/faq_zh_cn/>`__¡£
+å¸¸è§é—®é¢˜è¯·å‚è€ƒ `FAQ <https://arkc.org/faq_zh_cn/>`__ã€‚
 
 Acknowledgements
 ----------------
