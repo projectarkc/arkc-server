@@ -16,6 +16,7 @@ from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
 
 from coordinator import Coordinator
+from utils import generate_RSA
 
 
 def start_proxy(port):
@@ -41,7 +42,9 @@ def main():
                         help="show detailed logs")
     parser.add_argument("-vv", action="store_true", dest="vv",
                         help="show debug logs")
-    parser.add_argument('-c', '--config', dest="config", required=True,
+    parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
+                        help="Generate a key string and quit, overriding other options")
+    parser.add_argument('-c', '--config', dest="config", default=None,
                         help="specify a configuration files, required for ArkC to start")
     parser.add_argument("-t", action="store_true", dest="transmit",
                         help="use transmit server")
@@ -56,6 +59,19 @@ The programs is distributed under GNU General Public License Version 2.
 """)
 
     args = parser.parse_args()
+
+    if args.kg:
+        print("Generating 2048 bit RSA key.")
+        print("Writing to home directory " + os.path.expanduser('~'))
+        generate_RSA(os.path.expanduser(
+            '~' + os.sep + 'arkc_pri.asc'), os.path.expanduser('~' + os.sep + 'arkc_pub.asc'))
+        print(
+            "Please save the above settings to client and server side config files.")
+        quit()
+    elif args.config is None:
+        logging.fatal("Config file (-c or --config) must be specified.\n")
+        parser.print_help()
+        quit()
 
     # mapping client public sha1 --> (RSA key object, client private sha1)
     certs = dict()
@@ -146,6 +162,9 @@ The programs is distributed under GNU General Public License Version 2.
 
     if "obfs_level" not in data:
         data["obfs_level"] = 0
+    elif 1 <= int(data["obfs_level"]) <= 2:
+        logging.error(
+            "Support for obfs4proxy is experimental with known bugs. Run this mode at your own risk.")
 
     if "meek_url" not in data:
         data["meek_url"] = "https://arkc-reflect1.appspot.com/"

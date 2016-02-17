@@ -7,8 +7,19 @@ swapping connections.
 
 ArkC-Server is the server-side utility.
 
+What is ArkC?
+-------------
+
+ArkC allows users to enjoy free web browsing without worrying about censorship measures like IP blacklists. For VPS owners they are better equipped to share their VPS to people around them, or share online, the proxy hosted on their VPS.
+
+For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. 中文版本的介绍在这一页面 `ArkC的原理 <https://arkc.org/understand_arkc_zh_cn/>`__。
+
 Setup and Requirement
 ---------------------
+
+For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. 对于安装与部署的中文说明在`部署与安装ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__这一页面。
+
+For Windows users, you are recommended to use our Windows executable in the Github `release page <https://github.com/projectarkc/arkc-client/releases/latest>`__. Installing pycrypto and miniupnpc often involves configuration of compilers.
 
 Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is
 currently not supported for compatibility issues) and txsocksx. A
@@ -34,6 +45,8 @@ Fedora users:
 
 You may also install ArkC Server from source.
 
+If you need to support portable proxy function, like MEEK (required to integrate with GAE) or obfs4proxy, please follow the above link to arkc.org.
+
 Privilege
 ---------
 
@@ -43,6 +56,10 @@ queries). Usually this requires pre-configuration or root privillege.
 
 Usage
 -----
+
+For detailed documentation, please visit our `Documentation page <https://arkc.org/documentation/>`__.
+
+中文版本的使用文档，请参见`如何使用ArkC <https://arkc.org/documentation_zh_cn/>`__。
 
 Run
 
@@ -94,6 +111,20 @@ Note: if obfs\_level is set to a non-zero value, obfs4\_exec must be
 appropriate set. Obfs4 will use an IAT mode of (obfs\_level - 1), which
 means if obfs\_level is set to 2 or 3, the connection speed may be
 affected.
+
+Join our "Shared Server Plan"
+-----------------------------
+
+We want to provide free proxy service for netizens behind censorship firewalls, thus may we invite you to join our "Shared Server Plan" and add your VPS to our server pool, open for all ArkC users.
+
+We are raising fund to provide rewards for VPS owners in this plan via Google Play / iTunes gift cards. Read the `Plan homepage <https://arkc.org/shared-server-plan/>`__ for more information.
+
+Questions | 使用或安装时遇到问题
+-------------------------------
+
+Go to our `FAQ page <https://arkc.org/faq/>`__.
+
+常见问题请参考`FAQ <https://arkc.org/faq_zh_cn/>`__。
 
 Acknowledgements
 ----------------

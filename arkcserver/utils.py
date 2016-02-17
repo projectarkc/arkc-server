@@ -1,9 +1,11 @@
 from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
 from time import time
 import random
 import bisect
 import base64
 import socket
+from hashlib import sha1
 
 import struct
 from errno import EOPNOTSUPP, EINVAL, EAGAIN
@@ -39,6 +41,17 @@ def weighted_choice(l, f_weight):
     return l[i]
 
 # TODO: introduce reset strategy
+
+
+def generate_RSA(pridir, pubdir):
+    key = RSA.generate(2048)
+    with open(pridir, 'w') as content_file:
+        content_file.write(key.exportKey('PEM'))
+    print("Private key written to home directory " + pridir)
+    with open(pubdir, 'w') as content_file:
+        content_file.write(key.exportKey('OpenSSH'))
+    print("Public key written to home directory " + pubdir)
+    return sha1(key.exportKey('PEM')).hexdigest()
 
 
 class AESCipher:
