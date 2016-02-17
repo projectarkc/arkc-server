@@ -5,6 +5,7 @@ import argparse
 import json
 import sys
 import os.path
+import urllib
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -44,6 +45,8 @@ def main():
                         help="show debug logs")
     parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
                         help="Generate a key string and quit, overriding other options")
+    parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
+                        help="Download meek to home directory, overriding normal options")
     parser.add_argument('-c', '--config', dest="config", default=None,
                         help="specify a configuration files, required for ArkC to start")
     parser.add_argument("-t", action="store_true", dest="transmit",
@@ -64,9 +67,28 @@ The programs is distributed under GNU General Public License Version 2.
         print("Generating 2048 bit RSA key.")
         print("Writing to home directory " + os.path.expanduser('~'))
         generate_RSA(os.path.expanduser(
-            '~' + os.sep + 'arkc_pri.asc'), os.path.expanduser('~' + os.sep + 'arkc_pub.asc'))
+            '~') + os.sep + 'arkc_pri.asc', os.path.expanduser('~') + os.sep + 'arkc_pub.asc')
         print(
             "Please save the above settings to client and server side config files.")
+        quit()
+    elif args.dlmeek:
+        if sys.platform == 'linux2':
+            link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-client"
+            localfile = os.path.expanduser('~') + os.sep + "meek-client"
+        elif sys.platform == 'win32':
+            link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-client.exe"
+            localfile = os.path.expanduser('~') + os.sep + "meek-client.exe"
+        else:
+            print(
+                "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
+            print(
+                "Get source at https://github.com/projectarkc/meek/tree/master/meek-client")
+            quit()
+        print(
+            "Downloading meek plugin (meek-client) from github to " + localfile)
+        urllib.urlretrieve(link, localfile)
+        print("Finished. If no error, you may change obfs_level and update pt_exec to " +
+              localfile + " to use meek.")
         quit()
     elif args.config is None:
         logging.fatal("Config file (-c or --config) must be specified.\n")

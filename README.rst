@@ -20,8 +20,6 @@ Setup and Requirement
 For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. 对于安装与部署的中文说明在 `部署与安装ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__
 这一页面。
 
-For Windows users, you are recommended to use our Windows executable in the Github `release page <https://github.com/projectarkc/arkc-client/releases/latest>`__. Installing pycrypto and miniupnpc often involves configuration of compilers.
-
 Running ArkC-Server requires Python 2.7 and Twisted (Python 3 is
 currently not supported for compatibility issues) and txsocksx. A
 virtual environment is generally recommended.
