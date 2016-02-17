@@ -4,7 +4,8 @@ import logging
 import argparse
 import json
 import sys
-import os.path
+import os
+import stat
 import urllib
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -87,6 +88,10 @@ The programs is distributed under GNU General Public License Version 2.
         print(
             "Downloading meek plugin (meek-client) from github to " + localfile)
         urllib.urlretrieve(link, localfile)
+        if sys.platform == 'linux2':
+            st = os.stat(localfile)
+            os.chmod(localfile, st.st_mode | stat.S_IEXEC)
+            print("File made executable.")
         print("Finished. If no error, you may change obfs_level and update pt_exec to " +
               localfile + " to use meek.")
         quit()
