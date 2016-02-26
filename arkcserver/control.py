@@ -217,13 +217,12 @@ class Control:
                 # timeout enforced by GAE
                 if self.obfs_level < 3:
                     expire_time = expovariate(1.0 / 60)
-                    reactor.callLater(expire_time, self.client_reset, conn)
+                else:
+                    expire_time = expovariate(1.0 / 30)
+                reactor.callLater(expire_time, self.client_reset, conn)
             else:
                 conn.write(self.close_char, "00", "100000")
-                if self.obfs_level == 3:
-                    reactor.callLater(1, conn.close)
-                else:
-                    conn.close()
+                conn.close()
             # TODO: ADD to some black list?
 
     def add_cli(self, conn):

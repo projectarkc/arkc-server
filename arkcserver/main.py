@@ -20,6 +20,8 @@ from twisted_connect_proxy.server import ConnectProxy
 from coordinator import Coordinator
 from utils import generate_RSA
 
+VERSION = "0.2.1"
+
 
 def start_proxy(port):
     """Start the internal HTTP proxy server.
@@ -44,6 +46,8 @@ def main():
                         help="show detailed logs")
     parser.add_argument("-vv", action="store_true", dest="vv",
                         help="show debug logs")
+    parser.add_argument(
+        "--version", dest="version", action="store_true", help="show version number")
     parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
                         help="Generate a key string and quit, overriding other options")
     parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
@@ -63,8 +67,10 @@ The programs is distributed under GNU General Public License Version 2.
 """)
 
     args = parser.parse_args()
-
-    if args.kg:
+    if args.version:
+        print("ArkC Server Version " + VERSION)
+        quit()
+    elif args.kg:
         print("Generating 2048 bit RSA key.")
         print("Writing to home directory " + os.path.expanduser('~'))
         generate_RSA(os.path.expanduser(
