@@ -69,7 +69,7 @@ The programs is distributed under GNU General Public License Version 2.
     args = parser.parse_args()
     if args.version:
         print("ArkC Server Version " + VERSION)
-        quit()
+        sys.exit()
     elif args.kg:
         print("Generating 2048 bit RSA key.")
         print("Writing to home directory " + os.path.expanduser('~'))
@@ -77,7 +77,7 @@ The programs is distributed under GNU General Public License Version 2.
             '~') + os.sep + 'arkc_pri.asc', os.path.expanduser('~') + os.sep + 'arkc_pub.asc')
         print(
             "Please save the above settings to client and server side config files.")
-        quit()
+        sys.exit()
     elif args.dlmeek:
         if sys.platform == 'linux2':
             link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-client"
@@ -90,7 +90,7 @@ The programs is distributed under GNU General Public License Version 2.
                 "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
             print(
                 "Get source at https://github.com/projectarkc/meek/tree/master/meek-client")
-            quit()
+            sys.exit()
         print(
             "Downloading meek plugin (meek-client) from github to " + localfile)
         urllib.urlretrieve(link, localfile)
@@ -100,11 +100,11 @@ The programs is distributed under GNU General Public License Version 2.
             print("File made executable.")
         print("Finished. If no error, you may change obfs_level and update pt_exec to " +
               localfile + " to use meek.")
-        quit()
+        sys.exit()
     elif args.config is None:
         logging.fatal("Config file (-c or --config) must be specified.\n")
         parser.print_help()
-        quit()
+        sys.exit()
 
     # mapping client public sha1 --> (RSA key object, client private sha1)
     certs = dict()
@@ -119,7 +119,7 @@ The programs is distributed under GNU General Public License Version 2.
     except Exception as err:
         logging.error("Fatal error while loading configuration file.")
         print(err)  # TODO: improve error processing
-        quit()
+        sys.exit()
 
     try:
         for client in data["clients"]:
@@ -133,7 +133,7 @@ The programs is distributed under GNU General Public License Version 2.
     except Exception as err:
         print ("Fatal error while loading client certificate.")
         print (err)
-        quit()
+        sys.exit()
 
     if args.transmit:
         try:
@@ -143,7 +143,7 @@ The programs is distributed under GNU General Public License Version 2.
         except Exception as err:
             print ("Fatal error while loading client certificate.")
             print (err)
-            quit()
+            sys.exit()
     else:
         central_cert = None
 
@@ -155,7 +155,7 @@ The programs is distributed under GNU General Public License Version 2.
     except IOError as err:
         print ("Fatal error while loading local certificate.")
         print (err)
-        quit()
+        sys.exit()
 
     if args.vv:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
