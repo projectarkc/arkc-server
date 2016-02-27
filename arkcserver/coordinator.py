@@ -36,7 +36,7 @@ class Coordinator(DatagramProtocol):
     The dict maps SHA1 to key object.
     """
 
-    def __init__(self, proxy_port, socksproxy, pri, certs,
+    def __init__(self, proxy_port, socksproxy, pri, certs_db,
                  central_cert, delegatedomain, selfdomain, pt_exec,
                  obfs_level, meek_url, transmit):
         self.proxy_port = proxy_port
@@ -51,7 +51,7 @@ class Coordinator(DatagramProtocol):
         self.transmit = transmit
         self.central_pub = central_cert
         # dict mapping client sha-1 to (client pub, sha1(client pri))
-        self.certs = certs
+        self.certs_db = certs_db
 
         # dict mapping client sha-1 to control
         self.controls = dict()
@@ -86,7 +86,10 @@ class Coordinator(DatagramProtocol):
 
         num_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
         h = hashlib.sha256()
-        h.update(self.certs[client_sha1][1] + msg[3] + msg[4] + num_hex)
+        cert = self.certs_db.query(client_sha1)
+        if cert is None:
+            raise CorruptedReq
+        h.update(cert[1] + msg[3] + msg[4] + num_hex)
         assert msg[1] == pyotp.TOTP(h.hexdigest()).now()
         if msg[3][-1:] != 'G':
             remote_ip = str(ipaddress.ip_address(int(msg[3], 36)))
@@ -202,11 +205,9 @@ class Coordinator(DatagramProtocol):
                     self.parse_udp_msg(*query_data[:6])
             if number is None:
                 raise CorruptedReq
-            if client_sha1 is None:
-                raise DuplicateError
             if client_sha1 not in self.controls:
-                client_pub = self.certs[client_sha1][0]
-                control = Control(self, client_sha1, client_pub, self.certs[client_sha1][1],
+                cert = self.certs_db.query(client_sha1)
+                control = Control(self, client_sha1, cert[0], cert[1],
                                   remote_ip, tcp_port,
                                   main_pw, number, certs_str)
                 self.controls[client_sha1] = control

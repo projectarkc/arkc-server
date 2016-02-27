@@ -18,7 +18,7 @@ from twisted.web.http import HTTPFactory
 from twisted_connect_proxy.server import ConnectProxy
 
 from coordinator import Coordinator
-from utils import generate_RSA
+from utils import generate_RSA, certstorage
 
 VERSION = "0.2.1"
 
@@ -130,8 +130,22 @@ The programs is distributed under GNU General Public License Version 2.
                     ' ').lstrip('\n')
                 certs[sha1(remote_cert_txt).hexdigest()] =\
                      [remote_cert, client[1]]
+    except KeyError:
+        pass
     except Exception as err:
         print ("Fatal error while loading client certificate.")
+        print (err)
+        sys.exit()
+
+    try:
+        certsdbpath = data["clients_db"]
+    except KeyError:
+        certsdbpath = None
+
+    try:
+        certs_db = certstorage(certs, certsdbpath)
+    except Exception as err:
+        print ("Fatal error while loading clients' certificate.")
         print (err)
         sys.exit()
 
@@ -210,7 +224,7 @@ The programs is distributed under GNU General Public License Version 2.
                 data["proxy_port"],
                 data["socks_proxy"],
                 local_cert,
-                certs,
+                certs_db,
                 central_cert,
                 data["delegated_domain"],
                 data["self_domain"],
