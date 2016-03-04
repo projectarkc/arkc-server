@@ -3,6 +3,7 @@ import dnslib
 import hashlib
 import ipaddress
 import binascii
+import socket
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -128,9 +129,9 @@ class Coordinator(DatagramProtocol):
          """
 
         #assert len(msg) == 830
-        salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc, remote_ip_enc = \
+        salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc, remote_ip_enc, traversal_status = \
             msg[:16], msg[16:18], msg[18:22], msg[
-                22:62], msg[62:574], (msg[574:])[:-7], msg[-7:]
+                22:62], msg[62:574], (msg[574:])[:-7], msg[-7:-1], msg[-1:]
         if salt in self.recentsalt:
             return (None, None, None, None)
         remote_ip = str(
@@ -154,7 +155,7 @@ class Coordinator(DatagramProtocol):
         #    certs_str = urlsafe_b64_short_decode(certs_original)
         certs_str = None
 
-        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
+        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, int(traversal_status)
 
     def answer(self, dnsq, addr):
         answer = dnsq.reply()
@@ -198,13 +199,24 @@ class Coordinator(DatagramProtocol):
             # TODO: get obfs level from query length
 
             if self.transmit:
-                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
+                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str, traversal_status = \
                     self.parse_udp_msg_transmit(data)
             else:
                 main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
                     self.parse_udp_msg(*query_data[:6])
+                traversal_status = 1
             if number is None:
                 raise CorruptedReq
+            if traversal_status == 0:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind(("127.0.0.1", self.proxy_port))
+                auth_str = ""  # TODO: Define authentication string
+                s.connect((remote_ip, tcp_port))
+                s.send(auth_str)
+                buff = s.recv(512).split(' ')
+                remote_ip = buff[0]
+                tcp_port = int(buff[1])
             if client_sha1 not in self.controls:
                 cert = self.certs_db.query(client_sha1)
                 control = Control(self, client_sha1, cert[0], cert[1],
@@ -234,3 +246,6 @@ class Coordinator(DatagramProtocol):
             self.controls.pop(client_sha1)
         except Exception:
             pass
+
+    def authenticate(self):
+        pass
