@@ -208,15 +208,7 @@ class Coordinator(DatagramProtocol):
             if number is None:
                 raise CorruptedReq
             if traversal_status == 0:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind(("127.0.0.1", self.proxy_port))
-                auth_str = ""  # TODO: Define authentication string
-                s.connect((remote_ip, tcp_port))
-                s.send(auth_str)
-                buff = s.recv(512).split(' ')
-                remote_ip = buff[0]
-                tcp_port = int(buff[1])
+                remote_ip, tcp_port = self.get_cli_ip(remote_ip, tcp_port)
             if client_sha1 not in self.controls:
                 cert = self.certs_db.query(client_sha1)
                 control = Control(self, client_sha1, cert[0], cert[1],
@@ -246,6 +238,16 @@ class Coordinator(DatagramProtocol):
             self.controls.pop(client_sha1)
         except Exception:
             pass
+
+    def get_cli_ip(self, remote_ip, tcp_port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("127.0.0.1", self.proxy_port))
+        auth_str = ""  # TODO: Define authentication string
+        s.connect((remote_ip, tcp_port))
+        s.send(auth_str)
+        buff = s.recv(512).split(' ')
+        return buff[0], buff[1]
 
     def authenticate(self):
         pass
