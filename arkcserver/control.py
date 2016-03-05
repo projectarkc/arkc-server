@@ -366,16 +366,12 @@ class Control:
         except Exception:
             pass
 
-    def client_lost(self, conn):
+    def client_lost(self, i):
         """Triggered by a ClientConnector's connectionLost method.
 
         Remove the closed connection and retry creating it.
         """
-        if conn in self.client_connectors_pool:
-            i = self.client_connectors_pool.index(conn)
-            self.client_connectors_pool[i] = None
-        elif self.client_connectors_pool[conn.i] == 1:
-            self.client_connectors_pool[conn.i] = None
+        self.client_connectors_pool[i] = None
         # Disable immediate connect seems to improve performance. #TODO: Why?
         # self.connect()
 
