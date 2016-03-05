@@ -109,11 +109,19 @@ class Control:
         # meek (GAE) init
         if self.obfs_level == 3:
             self.ptproxy_local_port = None
+            if "appspot.com" in self.initiator.meek_url:
+                logging.info("Using GAE mode for appspot.com detected in URL.")
+                cmdline = self.initiator.pt_exec + \
+                    " --url=" + self.initiator.meek_url + \
+                    " --desturl=http://" + self.host + \
+                    ":" + str(self.port) + "/"
+            else:
+                logging.info("Using CDN mode with " + self.initiator.meek_url)
+                cmdline = self.initiator.pt_exec + \
+                    " --url=" + self.initiator.meek_url
             self.check = threading.Event()
             meek_var = {
-                "ptexec": self.initiator.pt_exec +
-                " --url=" + self.initiator.meek_url +
-                " --desturl=http://" + self.host + ":" + str(self.port) + "/",
+                "ptexec": cmdline,
                 "localport": self.ptproxy_local_port,
                 "LOCK": self.check
             }
