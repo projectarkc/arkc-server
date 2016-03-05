@@ -245,8 +245,13 @@ class Coordinator(DatagramProtocol):
         s.bind(("127.0.0.1", self.proxy_port))
         auth_str = ""  # TODO: Define authentication string
         s.connect((remote_ip, tcp_port))
-        s.send(auth_str)
-        buff = s.recv(512).split(' ')
+        sent=0
+        while sent<len(auth_str):
+            s.send(auth_str[sent:])
+        buff=""
+        while '\n' not in buff:
+            buff += s.recv(512)
+        buff=buff.split(' ')
         return buff[0], buff[1]
 
     def authenticate(self):
