@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding:utf-8
+
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from time import time

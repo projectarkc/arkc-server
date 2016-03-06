@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding:utf-8
+
 import logging
 from collections import deque
 from twisted.internet.protocol import Protocol
