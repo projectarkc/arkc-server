@@ -102,6 +102,7 @@ def main():
                 
         M.quit()
         time.sleep(30)
+    con.close()
 
 if __name__ == "__main__":
     main()
