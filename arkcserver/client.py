@@ -9,6 +9,7 @@ import random
 from utils import AESCipher
 from utils import addr_to_str
 from utils import get_timestamp, parse_timestamp
+from twisted.python.util import IntervalDifferential
 
 
 class ClientConnector(Protocol):
@@ -44,6 +45,12 @@ class ClientConnector(Protocol):
             str(self.i) if 10 <= self.i <= 99 else '0' + str(self.i))
         self.cronjob = None
         self.cancel_job = None
+        self.send_count = 0
+        self.send_speed = 0
+        self.recv_speed = 0
+        self.recv_count = 0
+        self.cl_send_speed = 0
+        self.cl_recv_speed = 0
 
     def generate_auth_msg(self):
         """Generate encrypted message. For auth and init.
@@ -78,6 +85,8 @@ class ClientConnector(Protocol):
             #logging.debug("send ping0")
             self.transport.write(to_write)
             interval = random.randint(500, 1500) / 100
+            self.speed(interval)
+            # send sever's speeds to clients
             if self.initiator.obfs_level == 3:
                 RESET_INTERVAL = 5
             else:
@@ -114,6 +123,7 @@ class ClientConnector(Protocol):
         #              addr_to_str(self.transport.getPeer()))
 
         self.buffer += recv_data
+        self.recv_count += len(recv_data)
 
         # a list of encrypted data packages
         # the last item may be incomplete
@@ -134,6 +144,8 @@ class ClientConnector(Protocol):
                         self, max_recved_idx)
                 else:
                     self.close()
+            elif flag == 9:
+                self.cl_speed(text_dec[1:], self)
             else:
                 # strip off type and seq (both are always 1)
                 self.ping_recv(text_dec[2:])
@@ -184,3 +196,27 @@ class ClientConnector(Protocol):
                                                                         self.transport.getPeer()),
                                                                     conn_id))
         self.transport.write(to_write)
+        self.send_count += len(data) + 7
+
+    def speed(self, interval):
+        """Get the sever's speeds for sending and receiving data  in a certain time interval
+        And send them to clients
+
+        packet format:
+         "9"                     (1 byte)    (type flag for speed)
+         send_speed     (how much bytes per second)
+         recv_speed      (how much bytes per second)
+        """
+        self.send_speed = self.send_count / interval
+        self.recv_speed = self.recv_count / interval
+        self.send_count = 0
+        self.recv_count = 0
+        raw_packet = "9" + repr([self.send_speed, self.recv_speed])
+        to_write = self.cipher.encrypt(raw_packet) + self.split_char
+        self.transport.write(to_write)
+
+    def cl_speed(self, msg):
+        """Parse sever's speed for sending and  receiving"""
+        msg = eval(msg)
+        self.cl_send_speed = int(msg[0])
+        self.cl_recv_speed = int(msg[1])
