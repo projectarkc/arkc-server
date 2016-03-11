@@ -367,7 +367,7 @@ class Control:
         May result in better performance.
         """
         reactor.callLater(0.1, self.client_reset_exec, conn)
-        self.client_lost(conn)
+        self.client_lost(conn.i)
         conn.write(self.close_char, "00", "100000")
         conn.authenticated = False
 
