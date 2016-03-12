@@ -19,9 +19,12 @@ class TOTP(OTP):
         """
         self.interval = kwargs.pop('interval', 30)
         if self.systime_offset is None:
-            c = ntplib.NTPClient()
-            self.systime_offset = int(c.request(
-                'time-a.nist.gov', version=3).offset)
+            try:
+                c = ntplib.NTPClient()
+                self.systime_offset = int(c.request(
+                    'time.nist.gov', version=3).offset)
+            except Exception:
+                self.systime_offset = 0
         super(TOTP, self).__init__(*args, **kwargs)
 
     def at(self, for_time, counter_offset=0):
