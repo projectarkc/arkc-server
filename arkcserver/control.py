@@ -17,7 +17,7 @@ import sys
 from proxy import ProxyConnector
 from utils import addr_to_str
 from client import ClientConnector
-from meekserver import meekinit, meekterm
+from meekserver import meek
 import psutil
 import atexit
 
@@ -127,8 +127,9 @@ class Control:
                 "localport": self.ptproxy_local_port,
                 "LOCK": self.check
             }
+            self.meek = meek(self, meek_var)
             pt = threading.Thread(
-                target=meekinit, args=[self, meek_var])
+                target=self.meek.meekinit)
             pt.setDaemon(True)
             pt.start()
             self.check.wait(100)
@@ -510,7 +511,7 @@ class Control:
 
     def dispose(self):
         if self.obfs_level == 3:
-            meekterm()
+            self.meek.meekterm()
         try:
             for i in self.client_connectors_pool:
                 i.loseConnection()
