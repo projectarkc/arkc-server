@@ -81,10 +81,10 @@ The programs is distributed under GNU General Public License Version 2.
         sys.exit()
     elif args.dlmeek:
         if sys.platform == 'linux2':
-            link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-client"
+            link = "https://github.com/projectarkc/meek/releases/download/v0.2.2/meek-client"
             localfile = os.path.expanduser('~') + os.sep + "meek-client"
         elif sys.platform == 'win32':
-            link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-client.exe"
+            link = "https://github.com/projectarkc/meek/releases/download/v0.2.2/meek-client.exe"
             localfile = os.path.expanduser('~') + os.sep + "meek-client.exe"
         else:
             print(
