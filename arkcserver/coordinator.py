@@ -62,7 +62,7 @@ class Coordinator(DatagramProtocol):
 
         self.recentsalt = []
         self.blacklist = []
-        self.blacklist_count = dict()
+        self.blacklist_buffer = dict()
 
     def parse_udp_msg(self, *msg):
         """
@@ -253,10 +253,10 @@ class Coordinator(DatagramProtocol):
 
     def blacklist_count(self, client_sha1, main_pw):
         if (client_sha1 + main_pw) not in self.blacklist:
-            if (client_sha1 + main_pw) in self.blacklist_count:
-                self.blacklist_count[client_sha1 + main_pw] += 1
-                if self.blacklist_count[client_sha1 + main_pw] >= 10:
+            if (client_sha1 + main_pw) in self.blacklist_buffer:
+                self.blacklist_buffer[client_sha1 + main_pw] += 1
+                if self.blacklist_buffer[client_sha1 + main_pw] >= 10:
                     self.blacklist_add(client_sha1, main_pw)
-                    self.blacklist_count.pop(client_sha1 + main_pw)
+                    self.blacklist_buffer.pop(client_sha1 + main_pw)
             else:
-                self.blacklist_count[client_sha1 + main_pw] = 1
+                self.blacklist_buffer[client_sha1 + main_pw] = 1

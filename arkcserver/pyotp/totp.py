@@ -70,5 +70,5 @@ class TOTP(OTP):
         return utils.build_uri(self.secret, name, issuer_name=issuer_name)
 
     def timecode(self, for_time):
-        i = time.mktime(for_time.timetuple() + self.systime_offset)
+        i = time.mktime(for_time.timetuple()) + self.systime_offset
         return int(i / self.interval)
