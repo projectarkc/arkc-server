@@ -5,8 +5,8 @@ import os
 import time
 import shlex
 import subprocess
-import threading
 import tempfile
+import logging
 
 
 class PTConnectFailed(Exception):
@@ -39,7 +39,7 @@ class meek():
         }
         self.LOCK = None
         self.PT_PROC = None
-        self.initator = initiator
+        self.initiator = initiator
 
     def logtime(self):
         return time.strftime('%Y-%m-%d %H:%M:%S')
@@ -113,6 +113,8 @@ class meek():
         try:
             self.CFG['_run'] = True
             self.runpt()
+        except Exception:
+            logging.debug("Error occurred in MEEK thread.")
         finally:
             self.CFG['_run'] = False
             if self.PT_PROC:

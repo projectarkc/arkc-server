@@ -16,7 +16,7 @@ import pyotp
 from utils import urlsafe_b64_short_decode
 
 MAX_SALT_BUFFER = 255
-BLACKLIST_EXPIRE_TIME = 3600
+BLACKLIST_EXPIRE_TIME = 7200
 
 
 class ClientAddrChanged(Exception):
@@ -109,6 +109,8 @@ class Coordinator(DatagramProtocol):
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
         self.recentsalt.append(msg[4])
+        if (client_sha1 + main_pw) in self.blacklist:
+            return (None, None, None, None)
 
         if 1 <= self.obfs_level <= 2:
             # obfs4 enabled
