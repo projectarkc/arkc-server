@@ -20,7 +20,6 @@ from client import ClientConnector
 from meekserver import meekinit, meekterm
 import psutil
 import atexit
-EXPIRE_TIME = 5
 
 
 def exit_handler():
@@ -200,6 +199,7 @@ class Control:
             self.retry_count += 1
             self.connect()
         elif all(_ is None for _ in self.client_connectors_pool):
+            self.initiator.blacklist_count(self.client_sha1, self.main_pw)
             self.dispose()
 
     def success(self, conn):
@@ -231,6 +231,10 @@ class Control:
             else:
                 conn.write(self.close_char, "00", "100000")
                 conn.close()
+                if all((_ is None) or (_ == 1) for _ in self.client_connectors_pool):
+                    self.initiator.blacklist_count(
+                        self.client_sha1, self.main_pw)
+                    self.dispose()
             # TODO: ADD to some black list?
 
     def add_cli(self, conn):

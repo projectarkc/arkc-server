@@ -16,6 +16,7 @@ import pyotp
 from utils import urlsafe_b64_short_decode
 
 MAX_SALT_BUFFER = 255
+BLACKLIST_EXPIRE_TIME = 3600
 
 
 class ClientAddrChanged(Exception):
@@ -60,6 +61,8 @@ class Coordinator(DatagramProtocol):
         self.controls = dict()
 
         self.recentsalt = []
+        self.blacklist = []
+        self.blacklist_count = dict()
 
     def parse_udp_msg(self, *msg):
         """
@@ -147,7 +150,8 @@ class Coordinator(DatagramProtocol):
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
         self.recentsalt.append(salt)
-
+        if (client_sha1 + main_pw) in self.blacklist:
+            return (None, None, None, None)
         # if not self.obfs_level:
         #    certs_str = None
         # else:
@@ -232,8 +236,27 @@ class Coordinator(DatagramProtocol):
         #    logging.error("unknown error: " + str(err))
 
     def remove_ctl(self, client_sha1, main_pw):
+        '''Remove reference to the Control instance'''
         try:
             del self.controls[client_sha1 + main_pw]
             self.controls.pop(client_sha1 + main_pw)
         except Exception:
             pass
+
+    def blacklist_add(self, client_sha1, main_pw):
+        self.blacklist.append(client_sha1 + main_pw)
+        reactor.callLater(
+            BLACKLIST_EXPIRE_TIME, self.blacklist_expire, len(self.blacklist) - 1)
+
+    def blacklist_expire(self, i):
+        self.blacklist.pop(i)
+
+    def blacklist_count(self, client_sha1, main_pw):
+        if (client_sha1 + main_pw) not in self.blacklist:
+            if (client_sha1 + main_pw) in self.blacklist_count:
+                self.blacklist_count[client_sha1 + main_pw] += 1
+                if self.blacklist_count[client_sha1 + main_pw] >= 10:
+                    self.blacklist_add(client_sha1, main_pw)
+                    self.blacklist_count.pop(client_sha1 + main_pw)
+            else:
+                self.blacklist_count[client_sha1 + main_pw] = 1
