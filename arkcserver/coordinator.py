@@ -56,7 +56,7 @@ class Coordinator(DatagramProtocol):
         # dict mapping client sha-1 to (client pub, sha1(client pri))
         self.certs_db = certs_db
 
-        # dict mapping client sha-1 to control
+        # dict mapping <client sha-1> + <main_pw> to control,
         self.controls = dict()
 
         self.recentsalt = []
@@ -208,15 +208,15 @@ class Coordinator(DatagramProtocol):
                     self.parse_udp_msg(*query_data[:6])
             if number is None:
                 raise CorruptedReq
-            if client_sha1 not in self.controls:
+            if (client_sha1 + main_pw) not in self.controls:
                 cert = self.certs_db.query(client_sha1)
                 control = Control(self, client_sha1, cert[0], cert[1],
                                   remote_ip, tcp_port,
                                   main_pw, number, certs_str)
-                self.controls[client_sha1] = control
+                self.controls[client_sha1 + main_pw] = control
             else:
-                control = self.controls[client_sha1]
-                control.update(remote_ip, tcp_port, main_pw, number)
+                control = self.controls[client_sha1 + main_pw]
+                control.update(remote_ip, tcp_port, number)
 
             control.connect()
 
@@ -231,9 +231,9 @@ class Coordinator(DatagramProtocol):
         # except Exception as err:
         #    logging.error("unknown error: " + str(err))
 
-    def remove_ctl(self, client_sha1):
+    def remove_ctl(self, client_sha1, main_pw):
         try:
-            del self.controls[client_sha1]
-            self.controls.pop(client_sha1)
+            del self.controls[client_sha1 + main_pw]
+            self.controls.pop(client_sha1 + main_pw)
         except Exception:
             pass

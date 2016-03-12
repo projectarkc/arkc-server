@@ -148,7 +148,7 @@ class Control:
             # experimental function
     #    reactor.callLater(1, self.broadcast)
 
-    def update(self, host, port, main_pw, req_num):
+    def update(self, host, port, req_num):
         # Update the info in control object, called when different data come in
         # by new requests
         if self.original_host != host or self.original_port != port:
@@ -161,9 +161,6 @@ class Control:
         if self.req_num < req_num:
             # Reduce req_num when working is not permitted
             self.client_connectors_pool += [None] * (req_num - self.req_num)
-        if self.main_pw != main_pw:
-            self.main_pw = main_pw
-            logging.info("main password change")
 
     def connect(self):
         """Connect client."""
@@ -520,7 +517,7 @@ class Control:
             self.proxy_connectors_dict = None
         except Exception:
             pass
-        self.initiator.remove_ctl(self.client_sha1)
+        self.initiator.remove_ctl(self.client_sha1, self.main_pw)
 
 # TODO: use the same strategy for proxy and client, to avoid error with large
 # upload files
