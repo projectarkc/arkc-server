@@ -14,7 +14,7 @@ if str(sys.version_info.major) == '2':
 	'arkcserver.pytop': ['LICENSE'],
         'arkcserver.twisted_connect_proxy': ['LICENSE']
     }
-    required = ['twisted','pycrypto','txsocksx','dnslib', 'psutil', 'ipaddress']
+    required = ['ntplib', 'twisted','pycrypto','txsocksx','dnslib', 'psutil', 'ipaddress']
     entry = """
     [console_scripts]
     arkcserver = arkcserver.main:main
