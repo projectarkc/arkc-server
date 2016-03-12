@@ -21,7 +21,7 @@ class TOTP(OTP):
         if self.systime_offset is None:
             try:
                 c = ntplib.NTPClient()
-                self.systime_offset = int(c.request(
+                TOTP.systime_offset = int(c.request(
                     'time.nist.gov', version=3).offset)
             except Exception:
                 self.systime_offset = 0
