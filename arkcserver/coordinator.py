@@ -111,7 +111,7 @@ class Coordinator(DatagramProtocol):
             self.recentsalt.pop(0)
         self.recentsalt.append(msg[4])
         if (client_sha1 + main_pw) in self.blacklist:
-            return (None, None, None, None)
+            return None, None, None, None, None, None
 
         if 1 <= self.obfs_level <= 2:
             # obfs4 enabled
@@ -248,6 +248,8 @@ class Coordinator(DatagramProtocol):
 
     def blacklist_add(self, client_sha1, main_pw):
         self.blacklist.append(client_sha1 + main_pw)
+        logging.warning(
+            "New blacklist item added: " + client_sha1 + " | " + main_pw)
         reactor.callLater(
             BLACKLIST_EXPIRE_TIME, self.blacklist_expire, len(self.blacklist) - 1)
 
