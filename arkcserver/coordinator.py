@@ -17,6 +17,7 @@ from utils import urlsafe_b64_short_decode
 
 MAX_SALT_BUFFER = 255
 BLACKLIST_EXPIRE_TIME = 7200
+MAX_CONN_PER_CLIENT = 20
 
 
 class ClientAddrChanged(Exception):
@@ -103,7 +104,7 @@ class Coordinator(DatagramProtocol):
             remote_ip = str(ipaddress.IPv6Address(int(msg[3][:-1], 36)))
         main_pw = binascii.unhexlify(msg[2])
         number = int(num_hex, 16)
-        if number <= 0:
+        if number <= 0 or number > MAX_CONN_PER_CLIENT:
             number = None
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
