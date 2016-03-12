@@ -20,15 +20,19 @@ BLACKLIST_EXPIRE_TIME = 7200
 MAX_CONN_PER_CLIENT = 20
 
 
-class ClientAddrChanged(Exception):
-    pass
-
-
 class DuplicateError(Exception):
     pass
 
 
 class CorruptedReq(Exception):
+    pass
+
+
+class IllegalReq(Exception):
+    pass
+
+
+class BlacklistReq(Exception):
     pass
 
 
@@ -104,14 +108,16 @@ class Coordinator(DatagramProtocol):
             remote_ip = str(ipaddress.IPv6Address(int(msg[3][:-1], 36)))
         main_pw = binascii.unhexlify(msg[2])
         number = int(num_hex, 16)
-        if number <= 0 or number > MAX_CONN_PER_CLIENT:
+        if number <= 0:
             number = None
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
         self.recentsalt.append(msg[4])
         if (client_sha1 + main_pw) in self.blacklist:
-            return None, None, None, None, None, None
+            raise BlacklistReq
+        if number > MAX_CONN_PER_CLIENT:
+            raise IllegalReq
 
         if 1 <= self.obfs_level <= 2:
             # obfs4 enabled
@@ -228,15 +234,15 @@ class Coordinator(DatagramProtocol):
             control.connect()
 
         except CorruptedReq:
-            logging.info("Corrupt request")
+            logging.debug("corrupt request")
         except KeyError:
-            logging.error("untrusted client")
+            logging.warning("untrusted client attempting to connect")
         except AssertionError:
-            logging.error("authentication failed or corrupt request")
-        except ClientAddrChanged:
-            logging.error("client address or port changed")
-        # except Exception as err:
-        #    logging.error("unknown error: " + str(err))
+            logging.debug("authentication failed or corrupt request")
+        except BlacklistReq:
+            logging.debug("request on blacklist")
+        except IllegalReq:
+            logging.debug("request for too many connections")
 
     def remove_ctl(self, client_sha1, main_pw):
         '''Remove reference to the Control instance'''
