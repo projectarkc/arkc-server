@@ -10,7 +10,7 @@ from utils import AESCipher
 from utils import addr_to_str
 from utils import get_timestamp, parse_timestamp
 from twisted.python.util import IntervalDifferential
-from common import int2base
+from utils import int2base
 
 
 class ClientConnector(Protocol):
