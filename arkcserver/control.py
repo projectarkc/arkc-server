@@ -319,6 +319,10 @@ class Control:
             except KeyError:
                 self.client_write(self.close_char, conn_id, "100000")
 
+    def wei_connect(self, c):
+        """weight item according to its connect speed"""
+        return(c.cl_connect_speed)
+
     def client_write(self, data, conn_id, assigned_index=None):
         """Pick a client connector and write the data.
         Triggered by proxy_recv or proxy_finish.
@@ -338,8 +342,9 @@ class Control:
             self.proxy_recv_index_dict[conn_id] = 100000
         if self.swap_count <= 0 or not self.preferred_conn.authenticated:
             # TODO: better algorithm
-            f = lambda c: 1.0 / (c.latency ** 2 + 1)
-            self.preferred_conn = weighted_choice(conns_avail, f)
+           #f = lambda c: 1.0 / (c.latency ** 2 + 1)
+            self.preferred_conn = weighted_choice(
+                conns_avail, self.wei_connect)
             self.preferred_conn.latency += 100
             self.swap_count = 8
         else:

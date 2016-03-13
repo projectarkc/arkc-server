@@ -10,6 +10,7 @@ from utils import AESCipher
 from utils import addr_to_str
 from utils import get_timestamp, parse_timestamp
 from twisted.python.util import IntervalDifferential
+from common import int2base
 
 
 class ClientConnector(Protocol):
@@ -51,6 +52,7 @@ class ClientConnector(Protocol):
         self.recv_count = 0
         self.cl_send_speed = 0
         self.cl_recv_speed = 0
+        self.cl_connect_speed = 0
 
     def generate_auth_msg(self):
         """Generate encrypted message. For auth and init.
@@ -186,10 +188,12 @@ class ClientConnector(Protocol):
             type    (1 byte)   (0 for normal data packet)
             id      (2 bytes)
             index   (6 bytes)
+            send time    (8 bytes)
             data
         """
-
-        to_write = self.cipher.encrypt("0" + conn_id + str(index) + data) +\
+        send_time = str(int2base(int(time() * 100)))
+        # get current time with base 36 as a string in a certain length .
+        to_write = self.cipher.encrypt("0" + conn_id + str(index) + send_time + data) +\
             self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
                                                                     addr_to_str(
@@ -220,3 +224,4 @@ class ClientConnector(Protocol):
         msg = eval(msg)
         self.cl_send_speed = int(msg[0])
         self.cl_recv_speed = int(msg[1])
+        self.cl_connect_speed = int(msg[2])
