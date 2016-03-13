@@ -52,7 +52,7 @@ class ClientConnector(Protocol):
         self.recv_count = 0
         self.cl_send_speed = 0
         self.cl_recv_speed = 0
-        self.cl_connect_speed = 0
+        self.cl_connect_speed = 1
 
     def generate_auth_msg(self):
         """Generate encrypted message. For auth and init.
