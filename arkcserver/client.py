@@ -147,7 +147,7 @@ class ClientConnector(Protocol):
                 else:
                     self.close()
             elif flag == 9:
-                self.cl_speed(text_dec[1:], self)
+                self.cl_speed(text_dec[1:])
             else:
                 # strip off type and seq (both are always 1)
                 self.ping_recv(text_dec[2:])
