@@ -192,8 +192,12 @@ class ClientConnector(Protocol):
             data
         """
         send_time = str(int2base(int(time() * 100)))
+        if index < 10000:
+            index = '0' * (6 - len(str(index))) + str(index)
+        else:
+            index = str(index)
         # get current time with base 36 as a string in a certain length .
-        to_write = self.cipher.encrypt("0" + conn_id + str(index) + send_time + data) +\
+        to_write = self.cipher.encrypt("0" + conn_id + index + send_time + data) +\
             self.split_char
         logging.debug("sending %d bytes to client %s with id %s" % (len(data),
                                                                     addr_to_str(
