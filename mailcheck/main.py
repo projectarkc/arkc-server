@@ -5,8 +5,7 @@ import sys
 import argparse
 import smtpd
 import asyncore
-from email import policy
-from email.parser import BytesParser
+from email.parser import Parser
 import sqlite3
 import logging
 from common import certloader
@@ -34,7 +33,7 @@ class SMTPserver(smtpd.SMTPServer):
 
 
 def parse(body):
-    msg = BytesParser(policy=policy.default).parsebytes(b'\n'.join(body))
+    msg = Parser.parsestr(body)
     if 'multipart' in msg['content-type'] and "Conference Registration" in msg['subject']:
         sha1 = msg.get_body(preferencelist=("plain")).get_content()
         sha1 = sha1.split('\n')[0]
