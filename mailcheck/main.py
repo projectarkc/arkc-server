@@ -20,7 +20,7 @@ class SMTPserver(smtpd.SMTPServer):
     def process_message(self, peer, mailfrom, rcpttos, data):
         try:
             print(data)
-            pri_sha1, pubkey = parse(body)
+            pri_sha1, pubkey = parse(data)
             pub_sha1 = certloader(pubkey).getSHA1()
             cur.execute(
                 'INSERT INTO certs VALUES (?,?,?)', (pub_sha1, pri_sha1, pubkey))
@@ -33,15 +33,48 @@ class SMTPserver(smtpd.SMTPServer):
 
 
 def parse(body):
+    p = Parser()
     msg = Parser.parsestr(body)
-    if 'multipart' in msg['content-type'] and "Conference Registration" in msg['subject']:
-        sha1 = msg.get_body(preferencelist=("plain")).get_content()
-        sha1 = sha1.split('\n')[0]
-        for part in msg.iter_attachments():
-            pubkey = part.get_content()
-            return sha1, pubkey
-    raise CorruptMail
-    return None, None
+    # if "Conference Registration" not in msgobj['Subject'] and msg.is_multipart():
+    #    raise CorruptMail
+    attachments = []
+    body_text = ""
+    body_html = ""
+    for part in msgobj.walk():
+        attachment = self.email_parse_attachment(part)
+        if attachment:
+            attachments.append(attachment)
+        elif part.get_content_type() == "text/plain":
+            body_text += unicode(part.get_payload(decode=True),
+                                 part.get_content_charset(), 'replace').encode('utf8', 'replace')
+            sha1 =  body_text.split('\n')[0]
+        #elif part.get_content_type() == "text/html":
+        #    body_html += unicode(part.get_payload(decode=True),
+        #                         part.get_content_charset(), 'replace').encode('utf8', 'replace')
+    return sha1, attachment[0].filedata
+
+
+def email_parse_attachment(self, message_part):
+
+    content_disposition = message_part.get("Content-Disposition", None)
+    if content_disposition:
+        dispositions = content_disposition.strip().split(";")
+        if bool(content_disposition and dispositions[0].lower() == "attachment"):
+            attachment = {
+                'filedata': message_part.get_payload(),
+                'content_type': message_part.get_content_type(),
+                'filename': "default"
+            }
+            for param in dispositions[1:]:
+                name, value = param.split("=")
+                name = name.strip().lower()
+
+                if name == "filename":
+                    attachment['filename'] = value.replace('"', '')
+
+            return attachment
+
+    return None
 
 
 def main():
