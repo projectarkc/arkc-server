@@ -22,7 +22,7 @@ class TOTP(OTP):
             try:
                 c = ntplib.NTPClient()
                 TOTP.systime_offset = int(c.request(
-                    'time.nist.gov', version=3).offset)
+                    'pool.ntp.org', version=3).offset)
             except Exception:
                 self.systime_offset = 0
         super(TOTP, self).__init__(*args, **kwargs)
