@@ -79,7 +79,7 @@ class Coordinator(DatagramProtocol):
             (
                 required_connection_number (HEX, 2 bytes) +
                     used_remote_listening_port (HEX, 4 bytes) +
-                    sha1(cert_pub),
+                    sha1(cert_pub) + version (ascii, 2 bytes),
                 pyotp.TOTP(pri_sha1 + ip_in_hex_form + salt),   # TODO: client identity must be checked
                 main_pw,
                 ip_in_hex_form,
@@ -90,11 +90,12 @@ class Coordinator(DatagramProtocol):
             )
         """
 
-        assert len(msg[0]) == 46    # 2 + 4 + 40
+        assert len(msg[0]) == 48    # 2 + 4 + 40 + 2
 
         if msg[4] in self.recentsalt:
             raise BlacklistReq
-        num_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
+        num_hex, port_hex, client_sha1, version = msg[0][
+            :2], msg[0][2:6], msg[0][6:46], msg[0][46:48]
         h = hashlib.sha256()
         cert = self.certs_db.query(client_sha1)
         if cert is None:
@@ -125,7 +126,7 @@ class Coordinator(DatagramProtocol):
             certs_str = urlsafe_b64_short_decode(certs_original)
         else:
             certs_str = None
-        signature_to_client = int2base(self.pri.sign(self.main_pw, None)[0])
+        signature_to_client = int2base(self.pri.sign(main_pw, None)[0])
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, signature_to_client
 
     def parse_udp_msg_transmit(self, msg):
@@ -138,11 +139,12 @@ class Coordinator(DatagramProtocol):
              client_sign(salt) \r\n
              server_pub(main_pw) \r\n
              remote_ip \r\n
-             signature_to_client
+             signature_to_client \r\n
+             version
         """
 
         msglist = msg.split('\r\n')
-        if len(msglist) != 8:
+        if len(msglist) != 9:
             raise CorruptedReq
         [salt, number_hex, port_hex, client_sha1,
          salt_sign_hex, main_pw_enc, remote_ip_enc] = msglist
@@ -174,6 +176,7 @@ class Coordinator(DatagramProtocol):
         #    certs_str = urlsafe_b64_short_decode(certs_original)
         certs_str = None
         signature_to_client = msglist[7]
+        version = msglist[8]
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, signature_to_client
 
     def answer(self, dnsq, addr):
