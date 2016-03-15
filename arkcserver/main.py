@@ -21,7 +21,7 @@ from twisted_connect_proxy.server import ConnectProxy
 from coordinator import Coordinator
 from utils import generate_RSA, certstorage
 
-VERSION = "0.2.3"
+VERSION = "0.3.0"
 
 
 def start_proxy(port):
