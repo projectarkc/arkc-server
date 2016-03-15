@@ -93,8 +93,7 @@ class Coordinator(DatagramProtocol):
         assert len(msg[0]) == 46    # 2 + 4 + 40
 
         if msg[4] in self.recentsalt:
-            return None, None, None, None, None, None
-
+            raise BlacklistReq
         num_hex, port_hex, client_sha1 = msg[0][:2], msg[0][2:6], msg[0][6:46]
         h = hashlib.sha256()
         cert = self.certs_db.query(client_sha1)
@@ -109,7 +108,7 @@ class Coordinator(DatagramProtocol):
         main_pw = binascii.unhexlify(msg[2])
         number = int(num_hex, 16)
         if number <= 0:
-            number = None
+            raise CorruptedReq
         remote_port = int(port_hex, 16)
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
@@ -132,26 +131,28 @@ class Coordinator(DatagramProtocol):
     def parse_udp_msg_transmit(self, msg):
         """Return (main_pw, client_sha1, number).
          The encrypted message should be
-             salt +
-             required_connection_number (HEX, 2 bytes) +
-             client_listen_port (HEX, 4 bytes) +
-             sha1(local_pub) +
-             client_sign(salt) +
-             server_pub(main_pw) +
+             salt \n
+             required_connection_number (HEX, 2 bytes) \n
+             client_listen_port (HEX, 4 bytes) \n
+             sha1(local_pub) \n
+             client_sign(salt) \n
+             server_pub(main_pw) \n
              remote_ip
-         Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
-         """
+        """
 
-        #assert len(msg) == 830
-        salt, number_hex, port_hex, client_sha1, salt_sign_hex, main_pw_enc, remote_ip_enc = \
-            msg[:16], msg[16:18], msg[18:22], msg[
-                22:62], msg[62:574], (msg[574:])[:-7], msg[-7:]
+        msglist = msg.split('\n')
+        if len(msglist) != 7:
+            raise CorruptedReq
+        [salt, number_hex, port_hex, client_sha1,
+         salt_sign_hex, main_pw_enc, remote_ip_enc] = msglist
         if salt in self.recentsalt:
-            return (None, None, None, None)
+            return BlacklistReq
         remote_ip = str(
             ipaddress.ip_address(int(remote_ip_enc.rstrip("="), 36)))
-        salt_sign = (int(salt_sign_hex, 16),)
+        salt_sign = (int(salt_sign_hex, 36),)
         number = int(number_hex, 16)
+        if number > MAX_CONN_PER_CLIENT:
+            raise IllegalReq
         remote_port = int(port_hex, 16)
         assert self.central_pub.verify(
             salt + str(number) + remote_ip_enc + str(remote_port), salt_sign)
@@ -160,7 +161,7 @@ class Coordinator(DatagramProtocol):
             self.recentsalt.pop(0)
         self.recentsalt.append(salt)
         if (client_sha1 + main_pw) in self.blacklist:
-            return (None, None, None, None)
+            raise BlacklistReq
         # if not self.obfs_level:
         #    certs_str = None
         # else:
@@ -219,8 +220,6 @@ class Coordinator(DatagramProtocol):
             else:
                 main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
                     self.parse_udp_msg(*query_data[:6])
-            if number is None:
-                raise CorruptedReq
             if (client_sha1 + main_pw) not in self.controls:
                 cert = self.certs_db.query(client_sha1)
                 control = Control(self, client_sha1, cert[0], cert[1],
@@ -240,7 +239,7 @@ class Coordinator(DatagramProtocol):
         except AssertionError:
             logging.debug("authentication failed or corrupt request")
         except BlacklistReq:
-            logging.debug("request on blacklist")
+            logging.debug("request or salt on blacklist")
         except IllegalReq:
             logging.debug("request for too many connections")
 

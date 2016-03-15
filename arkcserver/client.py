@@ -179,7 +179,7 @@ class ClientConnector(Protocol):
             index   (6 bytes)
             data
         """
-        if index < 10000:
+        if index < 100000:
             index = '0' * (6 - len(str(index))) + str(index)
         else:
             index = str(index)
