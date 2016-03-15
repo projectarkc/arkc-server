@@ -131,16 +131,16 @@ class Coordinator(DatagramProtocol):
     def parse_udp_msg_transmit(self, msg):
         """Return (main_pw, client_sha1, number).
          The encrypted message should be
-             salt \n
-             required_connection_number (HEX, 2 bytes) \n
-             client_listen_port (HEX, 4 bytes) \n
-             sha1(local_pub) \n
-             client_sign(salt) \n
-             server_pub(main_pw) \n
+             salt \r\n
+             required_connection_number (HEX, 2 bytes) \r\n
+             client_listen_port (HEX, 4 bytes) \r\n
+             sha1(local_pub) \r\n
+             client_sign(salt) \r\n
+             server_pub(main_pw) \r\n
              remote_ip
         """
 
-        msglist = msg.split('\n')
+        msglist = msg.split('\r\n')
         if len(msglist) != 7:
             raise CorruptedReq
         [salt, number_hex, port_hex, client_sha1,
@@ -157,6 +157,8 @@ class Coordinator(DatagramProtocol):
         assert self.central_pub.verify(
             salt + str(number) + remote_ip_enc + str(remote_port), salt_sign)
         main_pw = self.pri.decrypt(main_pw_enc)
+        if len(main_pw) != 16:
+            raise CorruptedReq
         if len(self.recentsalt) >= MAX_SALT_BUFFER:
             self.recentsalt.pop(0)
         self.recentsalt.append(salt)
