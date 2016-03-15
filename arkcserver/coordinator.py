@@ -13,7 +13,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from control import Control
 import pyotp
 
-from utils import urlsafe_b64_short_decode
+from utils import urlsafe_b64_short_decode, int2base
 
 MAX_SALT_BUFFER = 255
 BLACKLIST_EXPIRE_TIME = 7200
@@ -125,8 +125,8 @@ class Coordinator(DatagramProtocol):
             certs_str = urlsafe_b64_short_decode(certs_original)
         else:
             certs_str = None
-
-        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
+        signature_to_client = int2base(self.pri.sign(self.main_pw, None)[0])
+        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, signature_to_client
 
     def parse_udp_msg_transmit(self, msg):
         """Return (main_pw, client_sha1, number).
@@ -137,11 +137,12 @@ class Coordinator(DatagramProtocol):
              sha1(local_pub) \r\n
              client_sign(salt) \r\n
              server_pub(main_pw) \r\n
-             remote_ip
+             remote_ip \r\n
+             signature_to_client
         """
 
         msglist = msg.split('\r\n')
-        if len(msglist) != 7:
+        if len(msglist) != 8:
             raise CorruptedReq
         [salt, number_hex, port_hex, client_sha1,
          salt_sign_hex, main_pw_enc, remote_ip_enc] = msglist
@@ -172,8 +173,8 @@ class Coordinator(DatagramProtocol):
         #    certs_original += '=' * ((160 - len(certs_original)) % 4)
         #    certs_str = urlsafe_b64_short_decode(certs_original)
         certs_str = None
-
-        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str
+        signature_to_client = msglist[7]
+        return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, signature_to_client
 
     def answer(self, dnsq, addr):
         answer = dnsq.reply()
@@ -217,14 +218,14 @@ class Coordinator(DatagramProtocol):
             # TODO: get obfs level from query length
 
             if self.transmit:
-                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
+                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str, signature = \
                     self.parse_udp_msg_transmit(data)
             else:
-                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str = \
+                main_pw, client_sha1, number, tcp_port, remote_ip, certs_str, signature = \
                     self.parse_udp_msg(*query_data[:6])
             if (client_sha1 + main_pw) not in self.controls:
                 cert = self.certs_db.query(client_sha1)
-                control = Control(self, client_sha1, cert[0], cert[1],
+                control = Control(self, signature, client_sha1, cert[0], cert[1],
                                   remote_ip, tcp_port,
                                   main_pw, number, certs_str)
                 self.controls[client_sha1 + main_pw] = control

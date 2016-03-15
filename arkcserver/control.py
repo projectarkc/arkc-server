@@ -49,9 +49,10 @@ class Control:
         spawned from it as the `initiator` parameter.
     """
 
-    def __init__(self, initiator, client_sha1, client_pub, client_pri_sha1,
+    def __init__(self, initiator, signature_to_client, client_sha1, client_pub, client_pri_sha1,
                  host, port, main_pw, req_num, certs_str=None):
         self.initiator = initiator
+        self.signature_to_client = signature_to_client
         self.socksproxy = self.initiator.socksproxy
         self.close_char = chr(4) * 5
         self.client_sha1 = client_sha1

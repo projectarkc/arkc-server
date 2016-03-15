@@ -18,6 +18,23 @@ from os import SEEK_CUR
 from collections import Callable
 
 
+def int2base(num, base=36, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
+    if num == 0:
+        return "0"
+
+    if num < 0:
+        return '-' + int2base((-1) * num, base, numerals)
+
+    if not 2 <= base <= len(numerals):
+        raise ValueError('Base must be between 2-%d' % len(numerals))
+
+    left_digits = num // base
+    if left_digits == 0:
+        return numerals[num % base]
+    else:
+        return int2base(left_digits, base, numerals) + numerals[num % base]
+
+
 class certstorage:
     """ A sqlite client to check if fetch certificates, authenticate, and buffer"""
 

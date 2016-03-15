@@ -35,7 +35,6 @@ class ClientConnector(Protocol):
         # control characters
         self.split_char = chr(27) + chr(28) + "%X" % struct.unpack('B', self.main_pw[-2:-1])[
             0] + "%X" % struct.unpack('B', self.main_pw[-3:-2])[0] + chr(31)
-        self.pri = self.initiator.initiator.pri
         self.client_pub = self.initiator.client_pub
         self.session_pw = urandom(16)
         self.cipher = AESCipher(self.session_pw, self.main_pw)
@@ -56,10 +55,10 @@ class ClientConnector(Protocol):
             client_pub(session_pw) + id
         Total length is 512 + 256 + 2 = 770 bytes
         """
-        hex_sign = '%X' % self.pri.sign(self.main_pw, None)[0]
         pw_enc = self.client_pub.encrypt(self.session_pw, None)[0]
-        return hex_sign + pw_enc + self.idchar +\
-            repr(self.initiator.client_recv_index_dict[self.i])
+        return '\r\n'.join((self.initiator.signature_to_client, pw_enc,
+                            self.idchar,
+                            repr(self.initiator.client_recv_index_dict[self.i])))
 
     def ping_send(self):
         """Send the initial ping message to the client at a certain interval.
