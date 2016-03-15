@@ -118,11 +118,17 @@ class meek():
         finally:
             self.CFG['_run'] = False
             if self.PT_PROC:
-                self.PT_PROC.kill()
-                self.PT_PROC.wait()
+                try:
+                    self.PT_PROC.kill()
+                    self.PT_PROC.wait()
+                except Exception:
+                    pass
             return
 
     def meekterm(self):
         self.CFG['_run'] = False
-        self.PT_PROC.kill()
-        self.PT_PROC.wait()
+        try:
+            self.PT_PROC.kill()
+            self.PT_PROC.wait()
+        except Exception:
+            pass
