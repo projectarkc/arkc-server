@@ -34,14 +34,14 @@ class SMTPserver(smtpd.SMTPServer):
 
 def parse(body):
     p = Parser()
-    msg = Parser.parsestr(body)
+    msg = p.parsestr(body)
     # if "Conference Registration" not in msgobj['Subject'] and msg.is_multipart():
     #    raise CorruptMail
     attachments = []
     body_text = ""
     body_html = ""
-    for part in msgobj.walk():
-        attachment = self.email_parse_attachment(part)
+    for part in msg.walk():
+        attachment = email_parse_attachment(part)
         if attachment:
             attachments.append(attachment)
         elif part.get_content_type() == "text/plain":
@@ -54,7 +54,7 @@ def parse(body):
     return sha1, attachment[0].filedata
 
 
-def email_parse_attachment(self, message_part):
+def email_parse_attachment(message_part):
 
     content_disposition = message_part.get("Content-Disposition", None)
     if content_disposition:
@@ -98,9 +98,12 @@ def main():
         sys.exit()
 
     cur = con.cursor()
-    cur.execute(
+    try:
+        cur.execute(
         "CREATE TABLE certs (pubkey_sha1 text, prikey_sha1, text, pubkey_body text)")
-    con.commit()
+        con.commit()
+    except sqlite3.OperationalError:
+        pass
 
     smtp = SMTPserver(('', 25), None)
 

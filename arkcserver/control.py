@@ -387,7 +387,7 @@ class Control:
         """
         self.client_connectors_pool[i] = None
         # Disable immediate connect seems to improve performance. #TODO: Why?
-        # self.connect()
+        self.connect()
 
     def register(self):
         for i in range(self.req_num):
