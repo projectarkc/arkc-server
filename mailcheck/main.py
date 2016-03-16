@@ -105,7 +105,7 @@ def main():
     cur = con.cursor()
     try:
         cur.execute(
-        "CREATE TABLE certs (pubkey_sha1 text, prikey_sha1, text, pubkey_body text)")
+        "CREATE TABLE certs (pubkey_sha1 text, prikey_sha1 text, pubkey_body text)")
         con.commit()
     except sqlite3.OperationalError:
         pass
