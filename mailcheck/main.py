@@ -38,19 +38,19 @@ def parse(body):
     # if "Conference Registration" not in msgobj['Subject'] and msg.is_multipart():
     #    raise CorruptMail
     attachments = []
-    body_text = ""
-    body_html = ""
+    body_text = b""
+    body_html = b""
     for part in msg.walk():
         attachment = email_parse_attachment(part)
         if attachment:
             attachments.append(attachment)
         elif part.get_content_type() == "text/plain":
             body_text += part.get_payload(decode=True)
-            sha1 =  body_text.split('\n')[0]
+            sha1 =  body_text.split(b'\n')[0]
         #elif part.get_content_type() == "text/html":
         #    body_html += unicode(part.get_payload(decode=True),
         #                         part.get_content_charset(), 'replace').encode('utf8', 'replace')
-    return sha1, attachment[0].filedata
+    return sha1.decode('UTF-8'), attachments[0].filedata
 
 
 def email_parse_attachment(message_part):
