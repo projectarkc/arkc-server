@@ -11,13 +11,19 @@ import logging
 from common import certloader
 
 
+cur = None
+con = None
+
+
 class CorruptMail(Exception):
     pass
 
 
 class SMTPserver(smtpd.SMTPServer):
 
+
     def process_message(self, peer, mailfrom, rcpttos, data):
+        global cur, con
         try:
             pri_sha1, pubkey = parse(data)
             pub_sha1 = certloader(pubkey).getSHA1()
@@ -76,6 +82,7 @@ def email_parse_attachment(message_part):
 
 
 def main():
+    global cur, con
     parser = argparse.ArgumentParser(description=None)
     # parser.add_argument(
     #    "--version", dest="version", action="store_true", help="show version number")
@@ -103,7 +110,7 @@ def main():
     except sqlite3.OperationalError:
         pass
 
-    smtp = SMTPserver(('', 25), None)
+    smtp = SMTPserver(('', 25), None, cur, con)
 
     try:
         asyncore.loop(use_poll=True)
