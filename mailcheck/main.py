@@ -19,7 +19,6 @@ class SMTPserver(smtpd.SMTPServer):
 
     def process_message(self, peer, mailfrom, rcpttos, data):
         try:
-            print(data)
             pri_sha1, pubkey = parse(data)
             pub_sha1 = certloader(pubkey).getSHA1()
             cur.execute(
@@ -50,7 +49,7 @@ def parse(body):
         #elif part.get_content_type() == "text/html":
         #    body_html += unicode(part.get_payload(decode=True),
         #                         part.get_content_charset(), 'replace').encode('utf8', 'replace')
-    return sha1.decode('UTF-8'), attachments[0].filedata
+    return sha1.decode('UTF-8'), attachments[0]['filedata'].decode('UTF-8')
 
 
 def email_parse_attachment(message_part):
@@ -60,7 +59,7 @@ def email_parse_attachment(message_part):
         dispositions = content_disposition.strip().split(";")
         if bool(content_disposition and dispositions[0].lower() == "attachment"):
             attachment = {
-                'filedata': message_part.get_payload(),
+                'filedata': message_part.get_payload(decode = True),
                 'content_type': message_part.get_content_type(),
                 'filename': "default"
             }
