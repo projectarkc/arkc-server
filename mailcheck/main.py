@@ -45,8 +45,7 @@ def parse(body):
         if attachment:
             attachments.append(attachment)
         elif part.get_content_type() == "text/plain":
-            body_text += unicode(part.get_payload(decode=True),
-                                 part.get_content_charset(), 'replace').encode('utf8', 'replace')
+            body_text += part.get_payload(decode=True)
             sha1 =  body_text.split('\n')[0]
         #elif part.get_content_type() == "text/html":
         #    body_html += unicode(part.get_payload(decode=True),
