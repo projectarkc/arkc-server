@@ -57,6 +57,12 @@ class certstorage:
                 key = RSA.importKey(rec[2])
                 self.db_buffer_dict[sha1_value] = [key, rec[1]]
         return self.db_buffer_dict[sha1_value]
+    
+    def quick_query(self, sha1_value):
+        if sha1_value in self.db_buffer_dict:
+            return self.db_buffer_dict[sha1_value]
+        else:
+            return None
 
     def close(self):
         try:

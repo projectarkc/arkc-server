@@ -180,21 +180,40 @@ class Coordinator(DatagramProtocol):
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, signature_to_client
 
     def answer(self, dnsq, addr):
-        answer = dnsq.reply()
-        answer.header = dnslib.DNSHeader(id=dnsq.header.id,
-                                         aa=1, qr=1, ra=1, rcode=3)
-        answer.add_auth(
-            dnslib.RR(
-                self.delegatedomain,
-                dnslib.QTYPE.SOA,
-                ttl=3600,
-                rdata=dnslib.SOA(
-                    self.selfdomain,
-                    "webmaster." + self.selfdomain,
-                    (20130101, 3600, 3600, 3600, 3600)
+        q_contents = str(dnsq.q.get_qname())
+        
+        if self.delegatedomain in q_contents:
+            delegatedomain = self.delegatedomain
+            selfdomain = self.selfdomain
+        else:
+            try:
+                q_contents_split = q_contents.split('.')
+                delegatedomain = '.'.join(q_contents_split[-5:])
+                selfdomain = '.'.join([q_contents_split[-5]] + q_contents_split[-3:])
+            except Exception:
+                delegatedomain = self.delegatedomain
+                selfdomain = self.selfdomain
+        if dnsq.q.qtype == dnslib.QTYPE.MX:
+            answer = dnsq.reply(ra=1, aa=1)
+            answer.add_answer(
+                *dnslib.RR.fromZone(q_contents + " 3600 MX 10 " + selfdomain))
+        else:
+            answer = dnsq.reply()
+            answer.header = dnslib.DNSHeader(id=dnsq.header.id,
+                                             aa=1, qr=1, ra=1, rcode=3)
+            answer.add_auth(
+                dnslib.RR(
+                    delegatedomain,
+                    dnslib.QTYPE.SOA,
+                    ttl=3600,
+                    rdata=dnslib.SOA(
+                        selfdomain,
+                        "webmaster." + selfdomain,
+                                    (20130101, 3600,
+                                     3600, 3600, 3600)
+                    )
                 )
             )
-        )
         answer.set_header_qa()
         packet = answer.pack()
         self.transport.write(packet, addr)
