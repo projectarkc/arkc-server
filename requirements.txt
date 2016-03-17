@@ -5,3 +5,4 @@ pyotp
 ipaddress
 dnslib
 psutil
+ntplib

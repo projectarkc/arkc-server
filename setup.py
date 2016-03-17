@@ -8,7 +8,7 @@ with codecs.open('README.rst', encoding='utf-8') as f:
 
 if str(sys.version_info.major) == '2':
     pkg_name = 'arkcserver'
-    pkg = ['arkcserver', 'arkcserver.pyotp', 'arkcserver.twisted_connect_proxy']
+    pkg = ['arkcserver', 'arkcserver.pyotp', 'arkcserver.twisted_connect_proxy', 'arkcserver.mailcheck']
     pkg_data = {
         'arkcclient': ['README.md', 'LICENSE'],
 	'arkcserver.pytop': ['LICENSE'],
@@ -18,6 +18,7 @@ if str(sys.version_info.major) == '2':
     entry = """
     [console_scripts]
     arkcserver = arkcserver.main:main
+    arkcserver-mailcheck = arkcserver.mailcheck.main:main
     """
     categories = [
         'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
@@ -34,7 +35,7 @@ else:
 
 setup(
     name=pkg_name,
-    version="0.3.0",
+    version="0.3.0.post2",
     license='https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
     description="A lightweight proxy designed to be proof to IP blocking measures",
     author='Noah, Teba, Ddeerreekk, Tsre',
