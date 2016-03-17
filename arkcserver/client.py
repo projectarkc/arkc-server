@@ -228,4 +228,8 @@ class ClientConnector(Protocol):
         msg = eval(msg)
         self.cl_send_speed = int(msg[0])
         self.cl_recv_speed = int(msg[1])
-        self.cl_connect_speed = int(msg[2])
+        if (self.cl_connect_speed != 1):
+            self.cl_connect_speed = int(msg[2])
+        print("cl_send speed:", self.cl_send_speed)
+        print("cl_recv speed", self.cl_recv_speed)
+        print("cl_connect speed", self.cl_connect_speed)
