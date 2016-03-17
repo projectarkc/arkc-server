@@ -49,9 +49,9 @@ class certstorage:
         # Currently the DB is for appending only
         if sha1_value not in self.db_buffer_dict:
             t = (sha1_value,)
-            self.db_cursor.execute('SELECT * FROM certs WHERE pub_sha1=?', t)
+            self.db_cursor.execute('SELECT * FROM certs WHERE pubkey_sha1=?', t)
             rec = self.db_cursor.fetchone()
-            if len(rec) != 1:
+            if rec is None:
                 return None
             else:
                 key = RSA.importKey(rec[0][2])
