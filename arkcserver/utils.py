@@ -54,7 +54,7 @@ class certstorage:
             if rec is None:
                 return None
             else:
-                key = RSA.importKey(rec[0][2])
+                key = RSA.importKey(rec[2])
                 self.db_buffer_dict[sha1_value] = [key, rec[1]]
         return self.db_buffer_dict[sha1_value]
 
