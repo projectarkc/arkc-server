@@ -112,6 +112,13 @@ def main():
     except sqlite3.OperationalError:
         pass
 
+    try:
+        cur.execute(
+        "CREATE INDEX pubkey_sha1 ON certs(pubkey_sha1)")
+        con.commit()
+    except sqlite3.OperationalError:
+        pass
+
     smtp = SMTPserver(('', 25), None)
 
     try:
