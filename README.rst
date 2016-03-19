@@ -14,7 +14,9 @@ Note: ArkC 0.3 is not compatible with 0.2 or earlier versions.
 What is ArkC?
 -------------
 
-ArkC allows users to enjoy free web browsing without worrying about censorship measures like IP blacklists. For VPS owners they are better equipped to share their VPS to people around them, or share online, the proxy hosted on their VPS.
+ArkC is not another Shadowsocks. 
+
+It enable server owners to let anyone enjoy free web browsing, without worrying IP blacklists. With ArkC VPS owners they are better equipped to share their VPS to people around them, or share online, the proxy hosted on their VPS.
 
 For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. 中文版本的介绍在这一页面 `ArkC的原理 <https://arkc.org/understand_arkc_zh_cn/>`__。
 
@@ -82,6 +84,16 @@ Run
 
     arkcserver [-h] [-v] [-ep (use external proxy)] [-t (use transmit mode)] [-c <Path of the config Json file, default = config.json>]
 
+to start the server.
+
+And WHEN ARKCSERVER IS RUNNING, run
+
+::
+
+    arkcserver-mailcheck -db DATABASE_ADDRESS
+
+To start a mail server and receive client credentials automatically.
+
 In this version, any private certificate should be in the form of PEM
 without encryption, while any public certificate should be in the form
 of ssh-rsa.
@@ -100,29 +112,35 @@ For the configuration file, you can find an example here:
 
 For a full list of settings:
 
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| Index name          | Value Type & Description                                      | Required / Default                       |
-+=====================+===============================================================+==========================================+
-| udp\_port           | int, udp listening port                                       | (0.0.0.0:)53                             |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| proxy\_port         | int, local/ext proxy port                                     | 8100(local)/8123(ext)                    |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| local\_cert\_path   | str, path of server pri                                       | REQUIRED                                 |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| central\_cert\_path | str, path of central server pub                               | REQUIRED if using transmit mode          |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| clients             | list, (path of client pub, sha1 of client pri) pairs          | REQUIRED unless "clients_db" is set      |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| clients_db          | str, path of the sqlite db where keys are stored or updated   | REQUIRED unless "clients" is set         |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| pt\_exec            | str, command line of pluggable transport executable           | "obfs4proxy"                             |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| obfs\_level         | integer, obfs level 0~3                                       | 0                                        |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| meek\_url           | str, URL of meek's GAE destination                            | "https://arkc-reflect1.appspot.com/"     |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
-| socks\_proxy        | list, (host, port)                                            | None (Unused)                            |
-+---------------------+---------------------------------------------------------------+------------------------------------------+
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| Index name          | Value Type & Description                                         | Required / Default                       |
++=====================+==================================================================+==========================================+
+| udp\_port           | int, udp listening port                                          | (0.0.0.0:)53                             |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| proxy\_port         | int, local/ext proxy port                                        | 8100(local)/8123(ext)                    |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| local\_cert\_path   | string, path of server pri                                       | REQUIRED                                 |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| central\_cert\_path | string, path of central server pub                               | REQUIRED if using transmit mode          |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| clients             | list, (path of client pub, sha1 of client pri) pairs             | REQUIRED unless "clients_db" is set      |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| clients_db          | string, path of the sqlite db where keys are stored or updated   | REQUIRED unless "clients" is set         |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| pt\_exec            | string, command line of pluggable transport executable           | "obfs4proxy"                             |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| obfs\_level         | integer, obfs level 0~3                                          | 0                                        |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| meek\_url           | string, URL of meek's GAE destination                            | "https://arkc-reflect1.appspot.com/"     |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| socks\_proxy        | list, (host, port)                                               | None (Unused)                            |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| delegated_domain    | string, the SOA record to respond                                | "public.arkc.org"                        |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+| self_domain         | string, the A record pointing to the server                      | "freedom.arkc.org"                       |
++---------------------+------------------------------------------------------------------+------------------------------------------+
+
+You can get your domain at `self.arkc.org <https://self.arkc.org/>`__.
 
 Note: if obfs\_level is set to a non-zero value, obfs4\_exec must be
 appropriate set. Obfs4 will use an IAT mode of (obfs\_level - 1), which

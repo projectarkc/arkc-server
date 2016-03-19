@@ -14,6 +14,7 @@ from common import certloader
 cur = None
 con = None
 
+KEYWORD = "Conference Registration"
 
 class CorruptMail(Exception):
     pass
@@ -40,7 +41,7 @@ class SMTPserver(smtpd.SMTPServer):
 def parse(body):
     p = Parser()
     msg = p.parsestr(body)
-    if "Conference Registration" not in msg['Subject'] or not msg.is_multipart():
+    if KEYWORD not in msg['Subject'] or not msg.is_multipart():
         raise CorruptMail
     attachments = []
     body_text = b""

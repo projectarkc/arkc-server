@@ -21,7 +21,7 @@ from twisted_connect_proxy.server import ConnectProxy
 from coordinator import Coordinator
 from utils import generate_RSA, certstorage
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 
 def start_proxy(port):
@@ -63,7 +63,7 @@ def main():
 Use this option to support other types of proxy other than HTTP, or use authentication at client-end proxy.
 Fall back to in-built python proxy server otherwise.""")
     print(
-        """ArkC Server V0.2, by ArkC Technology.
+        """ArkC Server V""" + VERSION + """ by ArkC Technology.
 The programs is distributed under GNU General Public License Version 2.
 """)
 
@@ -200,7 +200,7 @@ The programs is distributed under GNU General Public License Version 2.
         data["socks_proxy"] = None
 
     if "delegated_domain" not in data:
-        data["delegated_domain"] = "testing.arkc.org"
+        data["delegated_domain"] = "public.arkc.org"
 
     if "self_domain" not in data:
         data["self_domain"] = "freedom.arkc.org"
