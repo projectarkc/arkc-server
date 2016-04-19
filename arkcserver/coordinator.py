@@ -79,14 +79,15 @@ class Coordinator(DatagramProtocol):
             (
                 required_connection_number (HEX, 2 bytes) +
                     used_remote_listening_port (HEX, 4 bytes) +
-                    sha1(cert_pub) + version (ascii, 2 bytes),
+                    sha1(cert_pub),
                 pyotp.TOTP(pri_sha1 + ip_in_hex_form + salt),   # TODO: client identity must be checked
                 main_pw,
                 ip_in_hex_form,
                 salt,
                 [cert1,
                 cert2   (only when obfs4 is enabled)],
-                [some random string (only when meek is enabled)]
+                [some random string (only when meek is enabled)],
+                type + version
             )
         """
 
@@ -94,8 +95,8 @@ class Coordinator(DatagramProtocol):
 
         if msg[4] in self.recentsalt:
             raise BlacklistReq
-        num_hex, port_hex, client_sha1, version = msg[0][
-            :2], msg[0][2:6], msg[0][6:46], msg[0][46:48]
+        num_hex, port_hex, client_sha1 = msg[0][
+            :2], msg[0][2:6], msg[0][6:46]
         h = hashlib.sha256()
         cert = self.certs_db.query(client_sha1)
         if cert is None:
@@ -125,6 +126,7 @@ class Coordinator(DatagramProtocol):
             certs_original += '=' * ((160 - len(certs_original)) % 4)
             certs_str = urlsafe_b64_short_decode(certs_original)
         else:
+            assert msg[5][:2] == "0001"
             certs_str = None
         signature_to_client = int2base(self.pri.sign(main_pw, None)[0])
         return main_pw, client_sha1, number, remote_port, remote_ip, certs_str, signature_to_client
